@@ -1,13 +1,27 @@
-# AIユーザー診断
+# AI GEO診断ツール
 
-一般消費者の視点を持つAIが、LP・Webサイトを診断し「わかりにくさ・不安・違和感」を言語化するSaaS。
+AI検索エンジン（Google AI Overviews, ChatGPT Search, Perplexityなど）に**引用されやすいか**を診断するSaaS。
 
 ## 特徴
 
 - **URLを貼るだけ** - 面倒な設定は一切不要
-- **5つのペルソナで分析** - 3秒判断・疑い深い・比較検討・迷子・共感重視
-- **4段階の深層診断** - 構造解析 → ペルソナ評価 → 問題抽出 → 改善案生成
+- **GEO 5指標で分析** - 情報獲得量・エンティティ明確性・引用形式適合・回答直接性・信頼性
+- **Vision対応** - スクリーンショットを撮影し、視覚的な信頼性も評価
 - **具体的な改善案** - そのまま使える形で提案
+
+## GEO（Generative Engine Optimization）とは
+
+AI検索エンジンに引用されやすいコンテンツを作るための最適化手法です。従来のSEO（検索順位）とは異なり、**RAGエンジンがソースとして採用するか**を重視します。
+
+### 5つの評価指標
+
+| 指標 | 説明 |
+|------|------|
+| **Information Gain** | 独自データ・一次体験・具体的数値の含有量 |
+| **Entity Clarity** | 主語・述語・固有名詞の関係性の明確さ |
+| **Format Suitability** | AIが抜粋しやすい形式（箇条書き・表・ステップ） |
+| **Answer Directness** | ファーストビューでの結論提示 |
+| **Hallucination Risk** | 曖昧表現の回避・視覚的信頼性 |
 
 ## セットアップ
 
@@ -31,10 +45,10 @@ npm run dev
 
 ## 技術スタック
 
-- **フロントエンド**: Astro + Tailwind CSS
+- **フロントエンド**: Astro + Tailwind CSS v4
 - **バックエンド**: Astro API Routes (Node.js)
-- **AI**: Claude API (claude-sonnet-4-20250514)
-- **スクレイピング**: Cheerio
+- **AI**: Claude API (claude-sonnet-4-20250514) + Vision
+- **スクレイピング**: Puppeteer + Cheerio
 
 ## プロジェクト構成
 
@@ -43,12 +57,12 @@ src/
 ├── layouts/
 │   └── Layout.astro       # 共通レイアウト
 ├── lib/
-│   ├── scraper.ts         # LP構造化スクレイピング
-│   └── prompt.ts          # 4ステッププロンプト
+│   ├── scraper.ts         # Puppeteer + Cheerio スクレイピング
+│   └── prompt.ts          # GEO診断プロンプト
 ├── pages/
 │   ├── index.astro        # トップページ
 │   └── api/
-│       └── diagnose.ts    # 診断API（4ステップ）
+│       └── diagnose.ts    # 診断API
 └── styles/
     └── global.css         # Tailwind CSS
 ```
@@ -57,13 +71,23 @@ src/
 
 ```
 1. URL入力
-2. LP構造分解（hero/proof/pricing等）
-3. Step 1: 内容理解
-4. Step 2: 5ペルソナ視点分析
-5. Step 3: 問題点抽出・優先度付け
-6. Step 4: 改善案生成
+2. Puppeteerでページレンダリング＆スクリーンショット撮影
+3. Cheerioでページ構造を解析（hero/proof/pricing等）
+4. スクリーンショット + コンテンツをClaudeに送信
+5. GEO 5指標で評価・スコアリング
+6. 問題点抽出・改善案生成
 7. 結果表示
 ```
+
+## 出力内容
+
+診断結果には以下が含まれます：
+
+- **GEOスコア** (0-100): AI検索エンジンによる引用確率
+- **サマリー**: 引用に値するか否かの断言
+- **強み**: AIが引用しやすいと判断した具体的箇所
+- **課題**: 致命的な欠陥とその技術的解説・影響度
+- **AIシミュレーション**: 実際にAIがどう処理するかのプレビュー
 
 ## コマンド
 
@@ -72,6 +96,14 @@ src/
 | `npm run dev` | 開発サーバー起動 (localhost:4321) |
 | `npm run build` | 本番ビルド |
 | `npm run preview` | ビルドプレビュー |
+
+## デプロイ
+
+Vercel対応済み。`@astrojs/vercel`アダプターを使用。
+
+```bash
+npm run build
+```
 
 ## ライセンス
 
