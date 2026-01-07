@@ -1,5 +1,9 @@
 import * as cheerio from 'cheerio';
-import puppeteer from 'puppeteer';
+import puppeteer from 'puppeteer-core';
+import chromium from '@sparticuz/chromium';
+
+// Vercelサーバーレス環境かどうかを判定
+const isVercel = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
 
 export interface StructuredLP {
   url: string;
@@ -37,10 +41,25 @@ export interface StructuredLP {
 }
 
 export async function scrapeUrl(url: string): Promise<StructuredLP> {
-  const browser = await puppeteer.launch({
-    headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox']
-  });
+  // Vercel環境用のブラウザ設定
+  const browserOptions = isVercel
+    ? {
+      args: chromium.args,
+      executablePath: await chromium.executablePath(),
+      headless: true,
+    }
+    : {
+      // ローカル環境（macOS）用の設定
+      args: ['--no-sandbox', '--disable-setuid-sandbox'],
+      executablePath: process.platform === 'darwin'
+        ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+        : process.platform === 'win32'
+          ? 'C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe'
+          : '/usr/bin/google-chrome',
+      headless: true,
+    };
+
+  const browser = await puppeteer.launch(browserOptions);
 
   try {
     const page = await browser.newPage();
