@@ -45,7 +45,7 @@ async function callClaudedWithVision(apiKey: string, prompt: string, system: str
     },
     body: JSON.stringify({
       model: 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (最新・最高精度)
-      max_tokens: 2000,
+      max_tokens: 8000,
       system,
       messages: [{ role: 'user', content }],
     }),
