@@ -124,14 +124,25 @@ export const POST: APIRoute = async ({ request }) => {
     // 結果パース
     const result = parseJSON<GEODiagnosisResult>(geoResult);
 
-    // バリデーション
-    if (!result.summary || !Array.isArray(result.strengths) || !Array.isArray(result.issues) || !result.impression) {
-      throw new Error('診断結果の形式が不正です');
-    }
+    // バリデーションとデフォルト値設定
+    if (!result.summary) result.summary = "診断結果の要約生成に失敗しました。";
+    if (!Array.isArray(result.strengths)) result.strengths = [];
+    if (!Array.isArray(result.issues)) result.issues = [];
+    if (!result.impression) result.impression = "AIによる評価コメントの生成に失敗しました。";
 
     // geo_scoreのバリデーション（0-100の範囲）
     if (typeof result.geo_score !== 'number' || result.geo_score < 0 || result.geo_score > 100) {
-      result.geo_score = 50; // デフォルト値
+      // scoresがあればそこから平均を算出
+      if (result.scores) {
+        const values = Object.values(result.scores).filter(v => typeof v === 'number');
+        if (values.length > 0) {
+          result.geo_score = Math.round(values.reduce((a, b) => a + b, 0) / values.length);
+        } else {
+          result.geo_score = 50;
+        }
+      } else {
+        result.geo_score = 50; // デフォルト値
+      }
     }
 
     return new Response(JSON.stringify(result), {
