@@ -98,6 +98,11 @@ export function structuredLPToMarkdown(lp: StructuredLP): string {
     sections.push(`## 信頼性要素\n${trustElements.map(t => `- ${t}`).join('\n')}`);
   }
 
+  // 本文テキスト
+  if (lp.bodyText && lp.bodyText.length > 0) {
+    sections.push(`## 記事本文\n${lp.bodyText}`);
+  }
+
   return sections.join('\n\n');
 }
 

@@ -44,7 +44,7 @@ async function callClaudedWithVision(apiKey: string, prompt: string, system: str
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-3-haiku-20240307', // Claude 3 Haiku (Vision対応・高速)
+      model: 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (最新・最高精度)
       max_tokens: 2000,
       system,
       messages: [{ role: 'user', content }],

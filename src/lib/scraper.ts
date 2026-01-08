@@ -38,6 +38,7 @@ export interface StructuredLP {
     description: string;
   };
   screenshot: string; // Base64 image
+  bodyText: string; // 記事本文テキスト
 }
 
 export async function scrapeUrl(url: string): Promise<StructuredLP> {
@@ -172,6 +173,27 @@ export async function scrapeUrl(url: string): Promise<StructuredLP> {
     const title = $('title').text().trim();
     const description = $('meta[name="description"]').attr('content')?.trim() || '';
 
+    // === 本文テキスト抽出 ===
+    const bodyParagraphs: string[] = [];
+    // article, main, sectionから段落テキストを抽出
+    $('article p, main p, section p, .content p, .post p, .entry p, .body p').each((_, el) => {
+      const text = $(el).text().trim();
+      if (text && text.length > 30) { // 短すぎるテキストは除外
+        bodyParagraphs.push(text);
+      }
+    });
+    // 上記で取得できなかった場合、一般的なpタグから取得
+    if (bodyParagraphs.length === 0) {
+      $('p').each((_, el) => {
+        const text = $(el).text().trim();
+        if (text && text.length > 30) {
+          bodyParagraphs.push(text);
+        }
+      });
+    }
+    // 本文テキストを結合（最大5000文字に制限）
+    const bodyText = [...new Set(bodyParagraphs)].join('\n\n').slice(0, 5000);
+
     return {
       url,
       hero: {
@@ -205,6 +227,7 @@ export async function scrapeUrl(url: string): Promise<StructuredLP> {
         description,
       },
       screenshot,
+      bodyText,
     };
   } finally {
     await browser.close();
