@@ -211,5 +211,31 @@ export function parseJSON<T>(text: string): T {
     throw new Error('JSONのパースに失敗しました');
   }
 
-  return JSON.parse(jsonMatch[0]) as T;
+  let cleanJson = jsonMatch[0];
+
+  // JSONの修復処理
+  try {
+    return JSON.parse(cleanJson) as T;
+  } catch (firstError) {
+    // 一般的なJSON破損を修復
+    try {
+      // 制御文字を除去
+      cleanJson = cleanJson.replace(/[\x00-\x1F\x7F]/g, (char) => {
+        if (char === '\n' || char === '\r' || char === '\t') return char;
+        return '';
+      });
+
+      // 行末のカンマ問題を修復 (配列やオブジェクトの最後のカンマ)
+      cleanJson = cleanJson.replace(/,(\s*[\]}])/g, '$1');
+
+      // 文字列内のエスケープされていない改行を修復
+      cleanJson = cleanJson.replace(/:\s*"([^"]*?)\n([^"]*?)"/g, ': "$1\\n$2"');
+
+      return JSON.parse(cleanJson) as T;
+    } catch (secondError) {
+      console.error('JSON parse error. Raw text:', text.slice(0, 500));
+      console.error('Cleaned JSON:', cleanJson.slice(0, 500));
+      throw new Error(`JSONパースに失敗しました: ${firstError instanceof Error ? firstError.message : 'Unknown error'}`);
+    }
+  }
 }
