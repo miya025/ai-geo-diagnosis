@@ -39,6 +39,9 @@ export interface StructuredLP {
   };
   screenshot: string; // Base64 image
   bodyText: string; // 記事本文テキスト
+  codeBlocks: string[]; // コードスニペット
+  headings: { level: number; text: string }[]; // 見出し構造
+  links: { type: 'internal' | 'external'; url: string; text: string }[]; // リンク情報
 }
 
 export async function scrapeUrl(url: string): Promise<StructuredLP> {
@@ -194,6 +197,45 @@ export async function scrapeUrl(url: string): Promise<StructuredLP> {
     // 本文テキストを結合（最大5000文字に制限）
     const bodyText = [...new Set(bodyParagraphs)].join('\n\n').slice(0, 5000);
 
+    // === コードブロック抽出 ===
+    const codeBlocks: string[] = [];
+    $('pre, pre code, code').each((_, el) => {
+      const code = $(el).text().trim();
+      // 短すぎるコード（インラインコード）や長すぎるコードは除外
+      if (code && code.length > 20 && code.length < 3000) {
+        codeBlocks.push(code);
+      }
+    });
+
+    // === 見出し構造抽出 ===
+    const headings: { level: number; text: string }[] = [];
+    $('h1, h2, h3, h4, h5, h6').each((_, el) => {
+      const tagName = $(el).prop('tagName')?.toLowerCase() || '';
+      const level = parseInt(tagName.replace('h', ''), 10);
+      const text = $(el).text().trim();
+      if (text && text.length < 200) {
+        headings.push({ level, text });
+      }
+    });
+
+    // === リンク抽出 ===
+    const parsedUrl = new URL(url);
+    const links: { type: 'internal' | 'external'; url: string; text: string }[] = [];
+    $('a[href]').each((_, el) => {
+      const href = $(el).attr('href') || '';
+      const text = $(el).text().trim();
+      if (!href || !text || text.length > 100) return;
+      // 相対パス、同一ドメイン → internal
+      // 異なるドメイン → external
+      try {
+        const linkUrl = new URL(href, url);
+        const type = linkUrl.hostname === parsedUrl.hostname ? 'internal' : 'external';
+        links.push({ type, url: href, text });
+      } catch {
+        // 無効なURLは無視
+      }
+    });
+
     return {
       url,
       hero: {
@@ -228,6 +270,9 @@ export async function scrapeUrl(url: string): Promise<StructuredLP> {
       },
       screenshot,
       bodyText,
+      codeBlocks: [...new Set(codeBlocks)].slice(0, 10),
+      headings: headings.slice(0, 30),
+      links: links.slice(0, 20),
     };
   } finally {
     await browser.close();
