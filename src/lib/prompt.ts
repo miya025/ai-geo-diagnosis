@@ -231,10 +231,33 @@ export function parseJSON<T>(text: string): T {
       // 文字列内のエスケープされていない改行を修復
       cleanJson = cleanJson.replace(/:\s*"([^"]*?)\n([^"]*?)"/g, ': "$1\\n$2"');
 
+      // 途切れたJSONの修復（簡易版）
+      // 1. 開いている文字列を閉じる
+      if ((cleanJson.match(/"/g) || []).length % 2 !== 0) {
+        cleanJson += '"';
+      }
+
+      // 2. 開いている括弧を閉じる
+      const stack = [];
+      for (const char of cleanJson) {
+        if (char === '{') stack.push('}');
+        else if (char === '[') stack.push(']');
+        else if (char === '}' || char === ']') {
+          const expected = stack[stack.length - 1];
+          if (char === expected) stack.pop();
+        }
+      }
+      // スタックに残っている閉じ括弧を逆順に追加
+      while (stack.length > 0) {
+        cleanJson += stack.pop();
+      }
+
       return JSON.parse(cleanJson) as T;
     } catch (secondError) {
       console.error('JSON parse error. Raw text:', text.slice(0, 500));
       console.error('Cleaned JSON:', cleanJson.slice(0, 500));
+      // 最悪の場合、impressionだけ空で返すなどのフォールバックも検討可能だが、
+      // ここではエラーを投げる
       throw new Error(`JSONパースに失敗しました: ${firstError instanceof Error ? firstError.message : 'Unknown error'}`);
     }
   }
