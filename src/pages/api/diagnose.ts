@@ -120,9 +120,13 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Vision API呼び出し (スクリーンショットがある場合のみ送信)
     const geoResult = await callClaudedWithVision(apiKey, geoPrompt, GEO_SYSTEM_PROMPT, lp.screenshot);
+    console.log('--- AI RAW RESPONSE ---\n', geoResult.slice(0, 500) + '...', '\n-----------------------');
 
     // 結果パース
     const result = parseJSON<GEODiagnosisResult>(geoResult);
+    console.log('Parsed Result Keys:', Object.keys(result));
+    if (result.strengths) console.log('Strengths count:', result.strengths.length);
+    if (result.issues) console.log('Issues count:', result.issues.length);
 
     // バリデーションとデフォルト値設定
     if (!result.summary) result.summary = "診断結果の要約生成に失敗しました。";

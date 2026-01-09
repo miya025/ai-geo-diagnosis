@@ -34,18 +34,22 @@ export const GEO_SYSTEM_PROMPT = `# Role
     "hallucination_risk": 0〜100
   },
   "strengths": [
-    "AIが引用しやすいと感じた具体的な箇所"
+    "AIが引用しやすいと感じた具体的な箇所（例：価格比較表がMarkdownで記述されている点）。少なくとも3〜5点列挙すること。"
   ],
   "issues": [
     {
-      "title": "問題点のタイトル",
+      "title": "改善すべき点のタイトル（些細な点でも可）",
       "description": "なぜそれがAIにとってマイナスなのかの技術的解説",
-      "impact": "大/中/小",
-      "suggestion": "具体的な改善方法（コード例や修正手順を含む）"
+      "impact": "引用機会の損失度（大/中/小）",
+      "suggestion": "具体的な改善提案（コード変更や構成変更の指示）"
     }
   ],
-  "impression": "【AIシミュレーション】もしユーザーが『[ページのトピック]について教えて』と聞いた時、AIはこのページをこう処理するでしょう：『...』"
-}`;
+  "impression": "【AIシミュレーション】ユーザーの検索意図に対する適合度と、AIがどう処理するかの予測（必須）"
+}
+
+# Important Evaluation Rules
+- **issues（改善点）は必ず3つ以上見つけること。** 完璧なページは存在しない。些細な改善点（例：見出し階層の最適化、alt属性の具体化、構造化データの追加提案など）でも良いので、必ず3つ以上リストアップせよ。
+- **geo_score** は甘くつけないこと。80点以上は「Wikipedia並みに構造化された完璧な記事」のみ。通常の良記事は60-75点程度。`;
 
 // LP構造をMarkdown形式に変換
 export function structuredLPToMarkdown(lp: StructuredLP): string {
@@ -196,6 +200,30 @@ export interface DiagnosisResult {
   };
 }
 
+// JSON文字列内の制御文字（改行など）をエスケープする関数
+function escapeControlCharsInJsonString(jsonStr: string): string {
+  let inString = false;
+  let result = '';
+  for (let i = 0; i < jsonStr.length; i++) {
+    const char = jsonStr[i];
+    // エスケープされていないダブルクォートを検出
+    if (char === '"' && (i === 0 || jsonStr[i - 1] !== '\\')) {
+      inString = !inString;
+      result += char;
+    } else if (inString) {
+      // 文字列内にある制御文字をエスケープ
+      if (char === '\n') result += '\\n';
+      else if (char === '\r') result += '\\r';
+      else if (char === '\t') result += '\\t';
+      else result += char;
+    } else {
+      // 文字列外はそのまま
+      result += char;
+    }
+  }
+  return result;
+}
+
 export function parseJSON<T>(text: string): T {
   // JSONを抽出（マークダウンのコードブロック対応）
   let jsonStr = text;
@@ -219,17 +247,11 @@ export function parseJSON<T>(text: string): T {
   } catch (firstError) {
     // 一般的なJSON破損を修復
     try {
-      // 制御文字を除去
-      cleanJson = cleanJson.replace(/[\x00-\x1F\x7F]/g, (char) => {
-        if (char === '\n' || char === '\r' || char === '\t') return char;
-        return '';
-      });
+      // 数値的修復: 制御文字のエスケープ処理（文字列内の改行などを修正）
+      cleanJson = escapeControlCharsInJsonString(cleanJson);
 
       // 行末のカンマ問題を修復 (配列やオブジェクトの最後のカンマ)
       cleanJson = cleanJson.replace(/,(\s*[\]}])/g, '$1');
-
-      // 文字列内のエスケープされていない改行を修復
-      cleanJson = cleanJson.replace(/:\s*"([^"]*?)\n([^"]*?)"/g, ': "$1\\n$2"');
 
       // 途切れたJSONの修復（簡易版）
       // 1. 開いている文字列を閉じる

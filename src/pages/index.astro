@@ -412,43 +412,51 @@ import Layout from "../layouts/Layout.astro";
       const strengthsEl = document.getElementById(
         "result-strengths",
       ) as HTMLUListElement;
-      strengthsEl.innerHTML = data.strengths
-        .map(
-          (s) =>
-            `<li class="flex items-start gap-2"><span class="text-emerald-600">✓</span><span>${s}</span></li>`,
-        )
-        .join("");
+      if (data.strengths.length > 0) {
+        strengthsEl.innerHTML = data.strengths
+          .map(
+            (s) =>
+              `<li class="flex items-start gap-2"><span class="text-emerald-600">✓</span><span>${s}</span></li>`,
+          )
+          .join("");
+      } else {
+        strengthsEl.innerHTML = `<li class="text-slate-500 italic">特に評価されるポイントは見つかりませんでした。</li>`;
+      }
 
       // 気になる点（引用機会への影響度付き）
       const issuesEl = document.getElementById(
         "result-issues",
       ) as HTMLDivElement;
-      issuesEl.innerHTML = data.issues
-        .map((issue) => {
-          const impactColor =
-            issue.impact === "大"
-              ? "bg-red-100 text-red-800"
-              : issue.impact === "中"
-                ? "bg-yellow-100 text-yellow-800"
-                : "bg-blue-100 text-blue-800";
-          const suggestionHtml = issue.suggestion
-            ? `<div class="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                <p class="text-xs font-medium text-emerald-800 mb-1">💡 改善提案:</p>
-                <p class="text-sm text-emerald-700">${issue.suggestion}</p>
-              </div>`
-            : "";
-          return `
-            <div class="bg-white rounded-lg p-4">
-              <div class="flex items-center gap-2 mb-2">
-                <h4 class="font-bold text-amber-900">${issue.title}</h4>
-                <span class="text-xs px-2 py-0.5 rounded ${impactColor}">影響: ${issue.impact}</span>
+      if (data.issues.length > 0) {
+        issuesEl.innerHTML = data.issues
+          .map((issue) => {
+            const impactColor =
+              issue.impact === "大"
+                ? "bg-red-100 text-red-800"
+                : issue.impact === "中"
+                  ? "bg-yellow-100 text-yellow-800"
+                  : "bg-blue-100 text-blue-800";
+            const suggestionHtml = issue.suggestion
+              ? `<div class="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                  <p class="text-xs font-medium text-emerald-800 mb-1">💡 改善提案:</p>
+                  <p class="text-sm text-emerald-700">${issue.suggestion}</p>
+                </div>`
+              : "";
+            return `
+              <div class="bg-white rounded-lg p-4">
+                <div class="flex items-center gap-2 mb-2">
+                  <h4 class="font-bold text-amber-900">${issue.title}</h4>
+                  <span class="text-xs px-2 py-0.5 rounded ${impactColor}">影響: ${issue.impact}</span>
+                </div>
+                <p class="text-slate-700 text-sm">${issue.description}</p>
+                ${suggestionHtml}
               </div>
-              <p class="text-slate-700 text-sm">${issue.description}</p>
-              ${suggestionHtml}
-            </div>
-          `;
-        })
-        .join("");
+            `;
+          })
+          .join("");
+      } else {
+        issuesEl.innerHTML = `<div class="text-slate-500 italic p-4">特に改善すべきポイントは見つかりませんでした。</div>`;
+      }
 
       // AI検索プレビュー
       const impressionEl = document.getElementById(
