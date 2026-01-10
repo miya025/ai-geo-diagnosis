@@ -29,6 +29,7 @@ export function getSystemPrompt(lang: 'ja' | 'en' = 'ja'): string {
 
 {
   "summary": "AI検索エンジンから見たこのページの評価（150文字以内）。引用に値するか、単なるノイズとして処理されるかを断言する。",
+  "impression": "【AIシミュレーション】ユーザーの検索意図に対する適合度と、AIがどう処理するかの予測（必須）。ユーザーが実際に検索した際に、AIがこのページをどう紹介するかをシミュレーションして記述する。",
   "geo_score": 0〜100の整数（引用採用確率）,
   "scores": {
     "structure": 0〜100,
@@ -47,8 +48,7 @@ export function getSystemPrompt(lang: 'ja' | 'en' = 'ja'): string {
       "category": "structure|context|freshness|credibility",
       "suggestion": "具体的な改善提案（コード変更や構成変更の指示）"
     }
-  ],
-  "impression": "【AIシミュレーション】ユーザーの検索意図に対する適合度と、AIがどう処理するかの予測（必須）"
+  ]
 }
 
 # Important Evaluation Rules

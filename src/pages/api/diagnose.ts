@@ -252,7 +252,23 @@ export const POST: APIRoute = async ({ request }) => {
     if (!result.summary) result.summary = isEn ? "Failed to generate diagnosis summary." : "診断結果の要約生成に失敗しました。";
     if (!Array.isArray(result.strengths)) result.strengths = [];
     if (!Array.isArray(result.issues)) result.issues = [];
-    if (!result.impression) result.impression = isEn ? "Failed to generate AI evaluation comments." : "AIによる評価コメントの生成に失敗しました。";
+    // impressionが生成されなかった場合のフォールバック
+    if (!result.impression) {
+      if (result.summary && !result.summary.includes("失敗しました") && !result.summary.includes("Failed")) {
+        result.impression = result.summary;
+      } else {
+        const tempScore = typeof result.geo_score === 'number' ? result.geo_score : 50;
+        if (isEn) {
+          result.impression = tempScore >= 60
+            ? "The content includes clear signals for AI. It has a high potential for citation."
+            : "The content lacks structural clarity. AI might struggle to prioritize this page.";
+        } else {
+          result.impression = tempScore >= 60
+            ? "コンテンツにはAI向けの明確なシグナルが含まれています。検索結果で引用される可能性が高いでしょう。"
+            : "コンテンツの構造や信頼性シグナルが不足しています。AIがこのページを優先的に引用するのは難しいかもしれません。";
+        }
+      }
+    }
 
     // geo_scoreのバリデーション（0-100の範囲）
     if (typeof result.geo_score !== 'number' || result.geo_score < 0 || result.geo_score > 100) {

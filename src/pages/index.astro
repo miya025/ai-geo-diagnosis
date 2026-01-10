@@ -913,9 +913,35 @@ import Layout from "../layouts/Layout.astro";
       }
     }
 
-    // 既存のアップグレードボタンにもイベントリスナーを設定
-    const upgradeBtn = document.getElementById("upgrade-btn");
-    upgradeBtn?.addEventListener("click", handleUpgradeClick);
+    // ブラウザバック時などにボタンの状態をリセット
+    window.addEventListener("pageshow", () => {
+      const upgradeBtn = document.getElementById(
+        "upgrade-btn",
+      ) as HTMLButtonElement | null;
+      if (upgradeBtn) {
+        upgradeBtn.disabled = false;
+        // 言語設定を再適用してテキストを元に戻す
+        setLanguage(currentLang as "ja" | "en");
+      }
+
+      // エラー表示内のボタンもリセット
+      const errorUpgradeBtn = document.getElementById(
+        "upgrade-from-error",
+      ) as HTMLButtonElement | null;
+      if (errorUpgradeBtn) {
+        errorUpgradeBtn.disabled = false;
+        errorUpgradeBtn.innerHTML = "Proプランにアップグレード";
+      }
+    });
+
+    // 既存のアップグレードボタンにもイベントリスナーを設定 (イベント委譲に変更)
+    document.addEventListener("click", (e) => {
+      const target = e.target as HTMLElement;
+      const upgradeBtn = target.closest("#upgrade-btn");
+      if (upgradeBtn) {
+        handleUpgradeClick();
+      }
+    });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
@@ -1203,7 +1229,6 @@ import Layout from "../layouts/Layout.astro";
             </div>
             <div class="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer hover:bg-white/10 transition" onclick="document.getElementById('pro-upgrade-banner').scrollIntoView({behavior: 'smooth'})">
                  <div class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 shadow-2xl transform hover:scale-105 transition border border-indigo-500">
-                    <span class="text-xl">🔒</span>
                     <span>${t.pro_lock}</span>
                  </div>
             </div>
@@ -1218,7 +1243,6 @@ import Layout from "../layouts/Layout.astro";
             </div>
             <div class="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer hover:bg-white/10 transition" onclick="document.getElementById('pro-upgrade-banner').scrollIntoView({behavior: 'smooth'})">
                  <div class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 shadow-2xl transform hover:scale-105 transition border border-indigo-500">
-                    <span class="text-xl">🔒</span>
                     <span>${t.pro_lock}</span>
                  </div>
             </div>
