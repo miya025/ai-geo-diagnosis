@@ -14,11 +14,13 @@ export const POST: APIRoute = async ({ request, url }) => {
         typescript: true,
     });
 
-    // Get user ID from request body
+    // Get user ID and language from request body
     let userId;
+    let language;
     try {
         const body = await request.json();
         userId = body.userId;
+        language = body.language;
     } catch (e) {
         // If not JSON or empty.
     }
@@ -28,8 +30,22 @@ export const POST: APIRoute = async ({ request, url }) => {
     const country = request.headers.get('x-vercel-ip-country') || 'US';
 
     // 2. Select Price ID
-    // JP = JPY, others = USD
-    const priceId = country === 'JP'
+    // Logic: Language setting > IP location
+    // If language is explicitly 'en', use USD.
+    // If language is explicitly 'ja', use JPY.
+    // Otherwise, fallback to IP-based country detection.
+    let useJpy = false;
+
+    if (language === 'en') {
+        useJpy = false;
+    } else if (language === 'ja') {
+        useJpy = true;
+    } else {
+        // Fallback to IP location
+        useJpy = country === 'JP';
+    }
+
+    const priceId = useJpy
         ? (import.meta.env.STRIPE_PRICE_ID_JPY || process.env.STRIPE_PRICE_ID_JPY)
         : (import.meta.env.STRIPE_PRICE_ID_USD || process.env.STRIPE_PRICE_ID_USD);
 

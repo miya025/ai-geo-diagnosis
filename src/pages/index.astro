@@ -34,6 +34,7 @@ if (ipCountry === "JP") {
         <button
           id="header-login-btn"
           class="hidden text-sm font-medium text-indigo-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100 hover:shadow-md transition"
+          data-i18n="login_suggest"
         >
           ログイン
         </button>
@@ -622,6 +623,9 @@ if (ipCountry === "JP") {
         strengths_title: "AIに評価されるポイント",
         issues_title: "引用機会を損なうポイント",
         preview_title: "AI検索での表示プレビュー",
+        credits_exhausted_msg:
+          "今月の無料診断回数（3回）を使い切りました。Proプランにアップグレードすると無制限に診断できます。",
+        btn_upgrade_error: "Proプランにアップグレード",
       },
       en: {
         title: "GEO Diagnosis",
@@ -686,6 +690,9 @@ if (ipCountry === "JP") {
         strengths_title: "Points Evaluated by AI",
         issues_title: "Points Losing Citation Opportunities",
         preview_title: "AI Search Preview",
+        credits_exhausted_msg:
+          "You have used up your monthly free credits (3). Upgrade to Pro for unlimited diagnosis.",
+        btn_upgrade_error: "Upgrade to Pro Plan",
       },
     };
 
@@ -918,6 +925,7 @@ if (ipCountry === "JP") {
           },
           body: JSON.stringify({
             userId: currentUser?.id,
+            language: currentLang,
           }),
         });
 
@@ -969,7 +977,10 @@ if (ipCountry === "JP") {
       ) as HTMLButtonElement | null;
       if (errorUpgradeBtn) {
         errorUpgradeBtn.disabled = false;
-        errorUpgradeBtn.innerHTML = "Proプランにアップグレード";
+        errorUpgradeBtn.disabled = false;
+        errorUpgradeBtn.innerHTML = (translations as any)[
+          currentLang
+        ].btn_upgrade_error;
       }
     });
 
@@ -1036,11 +1047,12 @@ if (ipCountry === "JP") {
         if (!response.ok) {
           // クレジット切れの場合は特別なUI表示
           if (data.credits_exhausted) {
+            const t = (translations as any)[currentLang];
             error.innerHTML = `
               <div class="text-center">
-                <p class="font-bold mb-2">😢 ${data.error}</p>
+                <p class="font-bold mb-2">${t.credits_exhausted_msg}</p>
                 <button id="upgrade-from-error" class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">
-                  Proプランにアップグレード
+                  ${t.btn_upgrade_error}
                 </button>
               </div>
             `;
