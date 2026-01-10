@@ -24,9 +24,13 @@ if (ipCountry === "JP") {
 <Layout title="GEO診断 - AI検索エンジン最適化チェッカー">
   <main class="container mx-auto px-4 py-12 max-w-4xl">
     <!-- ヘッダー -->
-    <header class="text-center mb-12 relative">
+    <header
+      class="text-center mb-12 relative flex flex-col items-center md:block"
+    >
       <!-- ログインボタンエリア -->
-      <div class="absolute top-0 right-0 flex items-center gap-4 z-50">
+      <div
+        class="w-full flex justify-end items-center gap-4 z-50 mb-4 md:absolute md:top-0 md:right-0 md:w-auto md:mb-0"
+      >
         <button
           id="header-login-btn"
           class="hidden text-sm font-medium text-indigo-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100 hover:shadow-md transition"
@@ -53,7 +57,7 @@ if (ipCountry === "JP") {
       </div>
 
       <!-- 言語切り替え -->
-      <div class="flex justify-center mb-6 mt-12 md:mt-0">
+      <div class="flex justify-center mb-6 md:mt-0">
         <div class="bg-slate-100 p-1 rounded-lg inline-flex shadow-inner">
           <button
             id="lang-btn-ja"
