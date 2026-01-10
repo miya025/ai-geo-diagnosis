@@ -303,7 +303,8 @@ export const POST: APIRoute = async ({ request }) => {
       );
       console.log('Result cached successfully');
     } catch (cacheError) {
-      console.error('Cache save error (non-fatal):', cacheError);
+      console.error('Cache save error (non-fatal):', JSON.stringify(cacheError, null, 2));
+      // For debugging: log to console, but don't crash the request
     }
 
     // Step 5: クレジット消費（無料ユーザーのみ、キャッシュヒット時は消費しない）

@@ -1,5 +1,24 @@
 ---
 import Layout from "../layouts/Layout.astro";
+
+// Server-side language detection
+const headers = Astro.request.headers;
+
+// 1. Check Vercel IP country header (most reliable for deployed env)
+const ipCountry = headers.get("x-vercel-ip-country");
+
+// 2. Check Accept-Language header as fallback
+const acceptLanguage = headers.get("accept-language") || "";
+const prefersJapanese = acceptLanguage.toLowerCase().startsWith("ja");
+
+// Determine initial language: Japanese only for Japan IP, otherwise English
+let initialLang: "ja" | "en" = "en";
+if (ipCountry === "JP") {
+  initialLang = "ja";
+} else if (!ipCountry && prefersJapanese) {
+  // Local dev or no IP header: use browser preference
+  initialLang = "ja";
+}
 ---
 
 <Layout title="GEO診断 - AI検索エンジン最適化チェッカー">
@@ -468,6 +487,10 @@ import Layout from "../layouts/Layout.astro";
     </div>
   </div>
 
+  <script is:inline define:vars={{ initialLang }}>
+    window.__INITIAL_LANG__ = initialLang;
+  </script>
+
   <script>
     import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
@@ -530,8 +553,9 @@ import Layout from "../layouts/Layout.astro";
       "loading-step-3",
     ) as HTMLParagraphElement;
 
-    // 言語設定
-    let currentLang = "ja";
+    // 言語設定（サーバーサイドで検出した初期言語を使用）
+    let currentLang: "ja" | "en" = ((window as any).__INITIAL_LANG__ ||
+      "ja") as "ja" | "en";
     const translations = {
       ja: {
         title: "GEO診断",
@@ -862,6 +886,8 @@ import Layout from "../layouts/Layout.astro";
 
     // 初期化
     checkAuth();
+    // 初期言語設定をUIに反映
+    setLanguage(currentLang);
 
     // Proプランアップグレードハンドラー
     async function handleUpgradeClick() {

@@ -197,6 +197,11 @@ export async function saveCachedResult(
     // If a client is provided (e.g., authenticated user client), use it.
     // Otherwise, try to use the admin client.
     const supabaseClient = client || getSupabaseAdmin();
+    if (client) {
+        console.log('saveCachedResult: Using authenticated user client');
+    } else {
+        console.log('saveCachedResult: Using admin client (fallback)');
+    }
 
     const { error } = await supabaseClient
         .from('analysis_results')
@@ -210,6 +215,9 @@ export async function saveCachedResult(
         });
 
     if (error) {
-        console.error('Error saving cache:', error);
+        console.error('Error saving cache:', JSON.stringify(error, null, 2));
+        throw error; // Re-throw so caller knows it failed
+    } else {
+        console.log('saveCachedResult: Successfully saved to DB');
     }
 }
