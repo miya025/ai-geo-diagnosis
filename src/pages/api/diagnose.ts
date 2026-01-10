@@ -1,11 +1,21 @@
 import type { APIRoute } from 'astro';
 import { scrapeUrl } from '../../lib/scraper';
 import {
-  GEO_SYSTEM_PROMPT,
+  getSystemPrompt,
   buildGEOPrompt,
   parseJSON,
   type GEODiagnosisResult,
 } from '../../lib/prompt';
+import {
+  supabase,
+  getProfile,
+  checkAndResetCredits,
+  consumeCredit,
+  generateUrlHash,
+  generateContentHash,
+  getCachedResult,
+  saveCachedResult,
+} from '../../lib/supabase';
 
 export const prerender = false;
 
@@ -20,7 +30,19 @@ interface MessageContent {
   };
 }
 
-async function callClaudedWithVision(apiKey: string, prompt: string, system: string, base64Image?: string): Promise<string> {
+// AIモデル定義（Free = Haiku / Pro = Sonnet）
+const AI_MODELS = {
+  free: 'claude-haiku-4-5-20251001',    // Claude 4.5 Haiku
+  pro: 'claude-sonnet-4-5-20250929',    // Claude 4.5 Sonnet
+} as const;
+
+async function callClaudedWithVision(
+  apiKey: string,
+  prompt: string,
+  system: string,
+  base64Image?: string,
+  isPremium: boolean = false
+): Promise<string> {
   const content: MessageContent[] = [
     { type: 'text', text: prompt }
   ];
@@ -36,6 +58,10 @@ async function callClaudedWithVision(apiKey: string, prompt: string, system: str
     });
   }
 
+  // Free/Proでモデルを切り替え
+  const model = isPremium ? AI_MODELS.pro : AI_MODELS.free;
+  console.log(`Using AI model: ${model} (isPremium: ${isPremium})`);
+
   const response = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -44,7 +70,7 @@ async function callClaudedWithVision(apiKey: string, prompt: string, system: str
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-sonnet-4-5-20250929', // Claude Sonnet 4.5 (最新・最高精度)
+      model,
       max_tokens: 8000,
       system,
       messages: [{ role: 'user', content }],
@@ -70,7 +96,7 @@ async function callClaudedWithVision(apiKey: string, prompt: string, system: str
 export const POST: APIRoute = async ({ request }) => {
   try {
     const body = await request.json();
-    const { url } = body;
+    const { url, language = 'ja' } = body;
 
     // URLバリデーション
     if (!url || typeof url !== 'string') {
@@ -101,6 +127,59 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
+    // ========================================
+    // 認証・クレジット確認（仕様書 Section 2, 10）
+    // ========================================
+    let isPremium = false;
+    let freeCredits = 3;
+    let userId: string | null = null;
+
+    // Authorizationヘッダーからトークンを取得
+    const authHeader = request.headers.get('Authorization');
+    if (authHeader?.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+
+      // Supabaseでユーザー情報を取得
+      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+
+      if (!authError && user) {
+        userId = user.id;
+
+        // プロフィール取得（30日リセットチェック込み）
+        const profile = await checkAndResetCredits(userId);
+
+        if (profile) {
+          isPremium = profile.is_premium;
+          freeCredits = profile.free_credits;
+
+          // 無料ユーザーのクレジット確認
+          if (!isPremium) {
+            if (freeCredits <= 0) {
+              return new Response(JSON.stringify({
+                error: '今月の無料診断回数（3回）を使い切りました。Proプランにアップグレードすると無制限に診断できます。',
+                credits_exhausted: true,
+                free_credits: 0
+              }), {
+                status: 403,
+                headers: { 'Content-Type': 'application/json' },
+              });
+            }
+          }
+        }
+      }
+    }
+
+    console.log(`Auth check: isPremium=${isPremium}, freeCredits=${freeCredits}, userId=${userId || 'anonymous'}`);
+
+    // 【修正】ログイン必須化
+    // 仕様書通り、未ログインでの診断は許可しない
+    if (!userId) {
+      return new Response(JSON.stringify({ error: '診断を実行するにはログインが必要です。' }), {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // Step 1: スクレイピング（Puppeteer & Screenshot）
     console.log('Scraping URL:', url);
     let lp;
@@ -114,12 +193,38 @@ export const POST: APIRoute = async ({ request }) => {
       });
     }
 
-    // Step 2: GEO診断（マルチモーダル）
-    console.log('GEO診断実行中...');
-    const geoPrompt = buildGEOPrompt(lp);
+    // Step 2: キャッシュチェック
+    const urlHash = generateUrlHash(url);
+    const contentHash = generateContentHash(lp.bodyText || '');
+    console.log('Checking cache:', { urlHash, contentHash });
+
+    const cachedResult = await getCachedResult(urlHash, contentHash, language as string);
+    if (cachedResult) {
+      console.log('Cache hit! Returning cached result (no credit consumed)');
+      return new Response(JSON.stringify({
+        summary: cachedResult.advice_data?.summary || '',
+        geo_score: cachedResult.overall_score,
+        scores: cachedResult.detail_scores,
+        strengths: cachedResult.advice_data?.strengths || [],
+        issues: cachedResult.advice_data?.issues || [],
+        impression: cachedResult.advice_data?.impression || '',
+        cached: true,
+        is_premium: isPremium,
+        free_credits: freeCredits,
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
+    // Step 3: GEO診断（マルチモーダル）
+    console.log('GEO診断実行中... Language:', language);
+    const geoPrompt = buildGEOPrompt(lp, language as 'ja' | 'en');
+    const systemPrompt = getSystemPrompt(language as 'ja' | 'en');
 
     // Vision API呼び出し (スクリーンショットがある場合のみ送信)
-    const geoResult = await callClaudedWithVision(apiKey, geoPrompt, GEO_SYSTEM_PROMPT, lp.screenshot);
+    // Free: Haiku / Pro: Sonnet で切替
+    const geoResult = await callClaudedWithVision(apiKey, geoPrompt, systemPrompt, lp.screenshot, isPremium);
     console.log('--- AI RAW RESPONSE ---\n', geoResult.slice(0, 500) + '...', '\n-----------------------');
 
     // 結果パース
@@ -149,7 +254,63 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    return new Response(JSON.stringify(result), {
+    // Step 4: キャッシュに保存
+    try {
+      await saveCachedResult(
+        urlHash,
+        contentHash,
+        result.geo_score,
+        result.scores,
+        {
+          summary: result.summary,
+          strengths: result.strengths,
+          issues: result.issues,
+          impression: result.impression,
+        },
+        language as string
+      );
+      console.log('Result cached successfully');
+    } catch (cacheError) {
+      console.error('Cache save error (non-fatal):', cacheError);
+    }
+
+    // Step 5: クレジット消費（無料ユーザーのみ、キャッシュヒット時は消費しない）
+    let newFreeCredits = freeCredits;
+    if (userId && !isPremium) {
+      const consumed = await consumeCredit(userId);
+      if (consumed) {
+        newFreeCredits = freeCredits - 1;
+        console.log(`Credit consumed. Remaining: ${newFreeCredits}`);
+      }
+    }
+
+    // ブラックボックス化（フロントエンドで制御するためAPIでは全データを返す）
+    // Index.astro側で無料ユーザーの場合は2つ目以降をCSSマスクする仕様に変更
+    // 【修正】ただし、詳細スコア（Structure以外）はソースコードから見えないようにAPI側で隠蔽（0にする）
+    if (!isPremium && result.scores) {
+      // Structureはそのまま
+      // Context, Freshness, Credibility は隠蔽しないとコピーできてしまうため、ダミー値(0)にする
+      // フロントエンド側でマスク表示の下は "???" に書き換える
+      result.scores.context = 0;
+      result.scores.freshness = 0;
+      result.scores.credibility = 0;
+
+      // 【修正】アドバイスの隠蔽
+      // 無料ユーザーには「Structure」カテゴリのアドバイスを「1つだけ」返す
+      if (result.issues && result.issues.length > 0) {
+        const structureIssues = result.issues.filter(i => i.category === 'structure');
+        // Structureがあればその先頭1つ、なければ空にする
+        result.issues = structureIssues.slice(0, 1);
+      } else {
+        result.issues = [];
+      }
+    }
+
+    return new Response(JSON.stringify({
+      ...result,
+      is_premium: isPremium,
+      free_credits: newFreeCredits,
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });

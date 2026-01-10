@@ -5,15 +5,60 @@ import Layout from "../layouts/Layout.astro";
 <Layout title="GEO診断 - AI検索エンジン最適化チェッカー">
   <main class="container mx-auto px-4 py-12 max-w-4xl">
     <!-- ヘッダー -->
-    <header class="text-center mb-12">
-      <h1 class="text-4xl md:text-5xl font-bold text-slate-900 mb-4">
+    <header class="text-center mb-12 relative">
+      <!-- ログインボタンエリア -->
+      <div class="absolute top-0 right-0 flex items-center gap-4 z-50">
+        <button
+          id="header-login-btn"
+          class="hidden text-sm font-medium text-indigo-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-indigo-100 hover:shadow-md transition"
+        >
+          ログイン
+        </button>
+        <div id="header-user-info" class="hidden flex items-center gap-3">
+          <div class="text-right">
+            <p id="user-email" class="text-xs text-slate-500"></p>
+            <span
+              id="credit-badge"
+              class="inline-block text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full"
+              >残り: -回</span
+            >
+          </div>
+          <button
+            id="header-logout-btn"
+            class="text-xs text-slate-400 hover:text-red-500 underline transition"
+          >
+            ログアウト
+          </button>
+        </div>
+      </div>
+
+      <!-- 言語切り替え -->
+      <div class="flex justify-center mb-6 mt-12 md:mt-0">
+        <div class="bg-slate-100 p-1 rounded-lg inline-flex shadow-inner">
+          <button
+            id="lang-btn-ja"
+            class="px-4 py-1.5 rounded-md text-sm font-bold bg-white text-indigo-600 shadow-sm transition-all pointer-events-auto z-10"
+            >日本語</button
+          >
+          <button
+            id="lang-btn-en"
+            class="px-4 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-indigo-600 transition-all pointer-events-auto z-10"
+            >English</button
+          >
+        </div>
+      </div>
+
+      <h1
+        data-i18n="title"
+        class="text-4xl md:text-5xl font-bold text-slate-900 mb-4"
+      >
         GEO診断
       </h1>
-      <p class="text-xl text-slate-600 max-w-2xl mx-auto">
-        AI検索エンジン（ChatGPT、Perplexity、Google AI Overview）に<br
-          class="hidden sm:inline"
-        />
-        <span class="text-indigo-600 font-semibold"
+      <p
+        data-i18n="description"
+        class="text-xl text-slate-600 max-w-2xl mx-auto"
+      >
+        AI検索エンジンに<span class="text-indigo-600 font-semibold"
           >「引用されるコンテンツ」</span
         >かどうかを診断します
       </p>
@@ -26,6 +71,7 @@ import Layout from "../layouts/Layout.astro";
           <label
             for="url-input"
             class="block text-sm font-medium text-slate-700 mb-2"
+            data-i18n="label_url"
           >
             診断したいURLを入力
           </label>
@@ -42,6 +88,7 @@ import Layout from "../layouts/Layout.astro";
           type="submit"
           id="submit-btn"
           class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-4 px-6 rounded-xl text-lg transition duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          data-i18n="btn_diagnose"
         >
           GEO診断を開始する
         </button>
@@ -53,17 +100,17 @@ import Layout from "../layouts/Layout.astro";
           class="inline-block animate-spin rounded-full h-8 w-8 border-4 border-indigo-600 border-t-transparent"
         >
         </div>
-        <p class="mt-3 text-slate-600 font-medium">
+        <p class="mt-3 text-slate-600 font-medium" data-i18n="loading_msg">
           AI検索対策を精密診断中...（1〜2分程度）
         </p>
         <div class="mt-4 text-xs text-slate-400 space-y-1">
-          <p id="loading-step-1">
+          <p id="loading-step-1" data-i18n="loading_step1">
             🖥️ ヘッドレスブラウザでコンテンツを取得中...
           </p>
-          <p id="loading-step-2" class="opacity-50">
+          <p id="loading-step-2" class="opacity-50" data-i18n="loading_step2">
             📸 スクリーンショットを撮影して視覚分析中...
           </p>
-          <p id="loading-step-3" class="opacity-50">
+          <p id="loading-step-3" class="opacity-50" data-i18n="loading_step3">
             🤖 AIエンジンのアルゴリズムで評価中...
           </p>
         </div>
@@ -81,7 +128,12 @@ import Layout from "../layouts/Layout.astro";
     <section id="result" class="hidden space-y-6">
       <!-- GEOスコア -->
       <div class="bg-white rounded-2xl shadow-xl p-8">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">GEOスコア</h2>
+        <h2
+          class="text-2xl font-bold text-slate-900 mb-4"
+          data-i18n="geo_score"
+        >
+          GEOスコア
+        </h2>
         <div class="flex items-center gap-4">
           <div id="score-display" class="text-5xl font-bold text-indigo-600">
             --
@@ -95,7 +147,7 @@ import Layout from "../layouts/Layout.astro";
               >
               </div>
             </div>
-            <p class="text-sm text-slate-500 mt-1">
+            <p class="text-sm text-slate-500 mt-1" data-i18n="geo_score_desc">
               AI検索エンジンに引用される可能性
             </p>
           </div>
@@ -114,46 +166,96 @@ import Layout from "../layouts/Layout.astro";
         </div>
       </div>
 
-      <!-- 5指標詳細スコア -->
+      <!-- 4軸詳細スコア（ブラックボックス対応） -->
       <div id="scores-detail" class="bg-white rounded-2xl shadow-xl p-8 hidden">
-        <h2 class="text-2xl font-bold text-slate-900 mb-4">5つの評価指標</h2>
-        <div class="grid md:grid-cols-5 gap-4">
+        <h2 class="text-2xl font-bold text-slate-900 mb-4">4つの評価軸</h2>
+        <div class="grid md:grid-cols-4 gap-4">
+          <!-- Structure（常に表示） -->
           <div class="text-center p-4 bg-blue-50 rounded-xl">
-            <div id="score-info-gain" class="text-3xl font-bold text-blue-600">
+            <div id="score-structure" class="text-3xl font-bold text-blue-600">
               --
             </div>
-            <p class="text-xs text-slate-600 mt-1">情報獲得量</p>
+            <p class="text-xs text-slate-600 mt-1">Structure</p>
+            <p class="text-xs text-slate-400">構造・機械可読性</p>
           </div>
-          <div class="text-center p-4 bg-purple-50 rounded-xl">
-            <div id="score-entity" class="text-3xl font-bold text-purple-600">
+          <!-- Context（無料はマスク） -->
+          <div
+            id="axis-context"
+            class="text-center p-4 bg-purple-50 rounded-xl relative"
+          >
+            <div id="score-context" class="text-3xl font-bold text-purple-600">
               --
             </div>
-            <p class="text-xs text-slate-600 mt-1">エンティティ明確性</p>
-          </div>
-          <div class="text-center p-4 bg-green-50 rounded-xl">
-            <div id="score-format" class="text-3xl font-bold text-green-600">
-              --
-            </div>
-            <p class="text-xs text-slate-600 mt-1">引用形式適合</p>
-          </div>
-          <div class="text-center p-4 bg-orange-50 rounded-xl">
+            <p class="text-xs text-slate-600 mt-1">Context</p>
+            <p class="text-xs text-slate-400">文脈・意味理解</p>
+            <!-- マスク -->
             <div
-              id="score-directness"
+              id="mask-context"
+              class="absolute inset-0 bg-slate-800/90 rounded-xl flex flex-col items-center justify-center hidden"
+            >
+              <span class="text-2xl mb-1">🔒</span>
+              <span class="text-white font-bold text-lg">指標B</span>
+            </div>
+          </div>
+          <!-- Freshness（無料はマスク） -->
+          <div
+            id="axis-freshness"
+            class="text-center p-4 bg-green-50 rounded-xl relative"
+          >
+            <div id="score-freshness" class="text-3xl font-bold text-green-600">
+              --
+            </div>
+            <p class="text-xs text-slate-600 mt-1">Freshness</p>
+            <p class="text-xs text-slate-400">情報の鮮度</p>
+            <!-- マスク -->
+            <div
+              id="mask-freshness"
+              class="absolute inset-0 bg-slate-800/90 rounded-xl flex flex-col items-center justify-center hidden"
+            >
+              <span class="text-2xl mb-1">🔒</span>
+              <span class="text-white font-bold text-lg">指標C</span>
+            </div>
+          </div>
+          <!-- Credibility（無料はマスク） -->
+          <div
+            id="axis-credibility"
+            class="text-center p-4 bg-orange-50 rounded-xl relative"
+          >
+            <div
+              id="score-credibility"
               class="text-3xl font-bold text-orange-600"
             >
               --
             </div>
-            <p class="text-xs text-slate-600 mt-1">回答直接性</p>
-          </div>
-          <div class="text-center p-4 bg-red-50 rounded-xl">
+            <p class="text-xs text-slate-600 mt-1">Credibility</p>
+            <p class="text-xs text-slate-400">信頼性シグナル</p>
+            <!-- マスク -->
             <div
-              id="score-hallucination"
-              class="text-3xl font-bold text-red-600"
+              id="mask-credibility"
+              class="absolute inset-0 bg-slate-800/90 rounded-xl flex flex-col items-center justify-center hidden"
             >
-              --
+              <span class="text-2xl mb-1">🔒</span>
+              <span class="text-white font-bold text-lg">指標D</span>
             </div>
-            <p class="text-xs text-slate-600 mt-1">信頼性</p>
           </div>
+        </div>
+        <!-- Pro誘導バナー（無料ユーザーのみ表示） -->
+        <div
+          id="pro-upgrade-banner"
+          class="hidden mt-6 p-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white"
+        >
+          <p class="font-bold mb-1">
+            🔒 AIに見落とされる致命的な原因があります
+          </p>
+          <p class="text-sm opacity-90 mb-3">
+            Proプランで3つの謎の指標を解除し、すべての改善アドバイスを確認できます。
+          </p>
+          <button
+            id="upgrade-btn"
+            class="bg-white text-indigo-600 font-bold py-2 px-6 rounded-lg hover:bg-indigo-50 transition"
+          >
+            Proプランを見る（月額1,980円）
+          </button>
         </div>
       </div>
 
@@ -212,11 +314,26 @@ import Layout from "../layouts/Layout.astro";
         </div>
       </div>
 
+      <!-- 残りクレジット数表示（無料ユーザーのみ） -->
+      <div
+        id="remaining-credits"
+        class="hidden mb-4 p-3 bg-indigo-50 rounded-xl text-center"
+      >
+        <p class="text-sm text-indigo-800">
+          <span data-i18n="credits_remain_prefix">今月の残り診断回数:</span>
+          <span id="remaining-credits-count" class="font-bold text-indigo-600"
+            >3</span
+          >
+          <span data-i18n="credits_remain_suffix">回</span>
+        </p>
+      </div>
+
       <!-- 再診断ボタン -->
       <div class="text-center">
         <button
           id="reset-btn"
           class="bg-slate-200 hover:bg-slate-300 text-slate-700 font-medium py-3 px-8 rounded-xl transition"
+          data-i18n="btn_reset"
         >
           別のURLを診断する
         </button>
@@ -227,22 +344,28 @@ import Layout from "../layouts/Layout.astro";
     <section class="mt-16 grid md:grid-cols-3 gap-6">
       <div class="bg-white rounded-xl p-6 shadow-lg">
         <div class="text-3xl mb-3">👁️</div>
-        <h3 class="font-bold text-lg mb-2">視覚的信頼性を分析</h3>
-        <p class="text-slate-600 text-sm">
+        <h3 class="font-bold text-lg mb-2" data-i18n="feat1_title">
+          視覚的信頼性を分析
+        </h3>
+        <p class="text-slate-600 text-sm" data-i18n="feat1_desc">
           Vision（画像認識）機能で、デザインや図解のわかりやすさも評価。
         </p>
       </div>
       <div class="bg-white rounded-xl p-6 shadow-lg">
         <div class="text-3xl mb-3">🖥️</div>
-        <h3 class="font-bold text-lg mb-2">動的サイト完全対応</h3>
-        <p class="text-slate-600 text-sm">
+        <h3 class="font-bold text-lg mb-2" data-i18n="feat2_title">
+          動的サイト完全対応
+        </h3>
+        <p class="text-slate-600 text-sm" data-i18n="feat2_desc">
           JSで描画されるSPAサイトも、実際の表示通りに正確に診断。
         </p>
       </div>
       <div class="bg-white rounded-xl p-6 shadow-lg">
         <div class="text-3xl mb-3">💡</div>
-        <h3 class="font-bold text-lg mb-2">具体的な改善指示</h3>
-        <p class="text-slate-600 text-sm">
+        <h3 class="font-bold text-lg mb-2" data-i18n="feat3_title">
+          具体的な改善指示
+        </h3>
+        <p class="text-slate-600 text-sm" data-i18n="feat3_desc">
           エンジニア・ライター向けに即座に修正できる技術的指摘を提供。
         </p>
       </div>
@@ -250,11 +373,94 @@ import Layout from "../layouts/Layout.astro";
 
     <!-- フッター -->
     <footer class="mt-16 text-center text-slate-500 text-sm">
-      <p>&copy; 2025 GEO診断 (Vision Enhanced)</p>
+      <p>&copy; 2026 GEO診断 (Vision Enhanced)</p>
     </footer>
   </main>
 
+  <!-- ログインモーダル -->
+  <div
+    id="login-modal"
+    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <h2
+        class="text-2xl font-bold text-slate-900 mb-4"
+        data-i18n="modal_title"
+      >
+        ログインが必要です
+      </h2>
+      <p class="text-slate-600 mb-6" data-i18n="modal_desc">
+        診断結果を保存・閲覧するにはGoogleアカウントでログインしてください。
+      </p>
+      <button
+        id="google-login-btn"
+        class="w-full flex items-center justify-center gap-3 bg-white border border-slate-300 hover:bg-slate-50 text-slate-700 font-medium py-3 px-6 rounded-xl transition"
+      >
+        <svg class="w-5 h-5" viewBox="0 0 24 24">
+          <path
+            fill="#4285F4"
+            d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
+          ></path>
+          <path
+            fill="#34A853"
+            d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
+          ></path>
+          <path
+            fill="#FBBC05"
+            d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"
+          ></path>
+          <path
+            fill="#EA4335"
+            d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"
+          ></path>
+        </svg>
+        <span data-i18n="btn_google_login">Googleでログイン</span>
+      </button>
+      <button
+        id="close-modal-btn"
+        class="w-full mt-4 text-slate-500 hover:text-slate-700 text-sm"
+        data-i18n="btn_cancel"
+      >
+        キャンセル
+      </button>
+      <!-- クレジット残数表示 -->
+      <div
+        id="credits-info"
+        class="hidden mt-4 p-3 bg-indigo-50 rounded-lg text-center"
+      >
+        <p class="text-sm text-indigo-800">
+          残り診断回数: <span id="credits-count" class="font-bold">3</span> 回
+        </p>
+      </div>
+    </div>
+  </div>
+
   <script>
+    import { createClient, SupabaseClient } from "@supabase/supabase-js";
+
+    // Supabaseクライアント初期化（クライアントサイド）
+    const supabaseUrl =
+      import.meta.env.PUBLIC_SUPABASE_URL || import.meta.env.SUPABASE_URL || "";
+    const supabaseAnonKey =
+      import.meta.env.PUBLIC_SUPABASE_ANON_KEY ||
+      import.meta.env.SUPABASE_ANON_KEY ||
+      "";
+
+    // Supabase未設定時はnullにしてスキップ
+    let supabase: SupabaseClient | null = null;
+    if (supabaseUrl && supabaseAnonKey) {
+      supabase = createClient(supabaseUrl, supabaseAnonKey);
+    } else {
+      console.error(
+        "Supabase API keys are missing. Please check your .env file.",
+      );
+    }
+
+    // 認証状態
+    let currentUser: any = null;
+    let pendingUrl: string | null = null;
+
+    // DOM要素
     const form = document.getElementById("diagnosis-form") as HTMLFormElement;
     const urlInput = document.getElementById("url-input") as HTMLInputElement;
     const submitBtn = document.getElementById(
@@ -264,6 +470,21 @@ import Layout from "../layouts/Layout.astro";
     const error = document.getElementById("error") as HTMLDivElement;
     const result = document.getElementById("result") as HTMLElement;
     const resetBtn = document.getElementById("reset-btn") as HTMLButtonElement;
+
+    // モーダル要素
+    const loginModal = document.getElementById("login-modal") as HTMLDivElement;
+    const googleLoginBtn = document.getElementById(
+      "google-login-btn",
+    ) as HTMLButtonElement;
+    const closeModalBtn = document.getElementById(
+      "close-modal-btn",
+    ) as HTMLButtonElement;
+    const creditsInfo = document.getElementById(
+      "credits-info",
+    ) as HTMLDivElement;
+    const creditsCount = document.getElementById(
+      "credits-count",
+    ) as HTMLSpanElement;
 
     // ローディングステップ要素
     const loadingStep1 = document.getElementById(
@@ -276,11 +497,260 @@ import Layout from "../layouts/Layout.astro";
       "loading-step-3",
     ) as HTMLParagraphElement;
 
+    // 言語設定
+    let currentLang = "ja";
+    const translations = {
+      ja: {
+        title: "GEO診断",
+        description: `AI検索エンジンに<span class="text-indigo-600 font-semibold">「引用されるコンテンツ」</span>かどうかを診断します`,
+        label_url: "診断したいURLを入力",
+        btn_diagnose: "GEO診断を開始する",
+        loading_msg: "AI検索対策を精密診断中...（1〜2分程度）",
+        loading_step1: "🖥️ ヘッドレスブラウザでコンテンツを取得中...",
+        loading_step2: "📸 スクリーンショットを撮影して視覚分析中...",
+        loading_step3: "🤖 AIエンジンのアルゴリズムで評価中...",
+        geo_score: "GEOスコア",
+        geo_score_desc: "AI検索エンジンに引用される可能性",
+        suggestion_prefix: "💡 改善提案:",
+        impact_high: "影響: 大",
+        impact_medium: "影響: 中",
+        impact_low: "影響: 小",
+        pro_lock: "🔒 Proプランで詳細を表示",
+        score_structure: "Structure (構造)",
+        score_context: "Context (文脈)",
+        score_freshness: "Freshness (鮮度)",
+        score_credibility: "Credibility (信頼性)",
+        login_suggest: "ログイン",
+        feat1_title: "視覚的信頼性を分析",
+        feat1_desc:
+          "Vision（画像認識）機能で、デザインや図解のわかりやすさも評価。",
+        feat2_title: "動的サイト完全対応",
+        feat2_desc: "JSで描画されるSPAサイトも、実際の表示通りに正確に診断。",
+        feat3_title: "具体的な改善指示",
+        feat3_desc:
+          "エンジニア・ライター向けに即座に修正できる技術的指摘を提供。",
+        credits_remain_prefix: "今月の残り診断回数: ",
+        credits_remain_suffix: "回",
+        btn_reset: "別のURLを診断する",
+        modal_title: "ログインが必要です",
+        modal_desc:
+          "診断結果を保存・閲覧するにはGoogleアカウントでログインしてください。",
+        btn_google_login: "Googleでログイン",
+        btn_cancel: "キャンセル",
+      },
+      en: {
+        title: "GEO Diagnosis",
+        description: `Check if your content is cited by <span class="text-indigo-600 font-semibold">AI Search Engines</span>`,
+        label_url: "Enter URL to analyze",
+        btn_diagnose: "Start Diagnosis",
+        loading_msg:
+          "Analyzing for AI Search Optimization... (approx. 1-2 mins)",
+        loading_step1: "🖥️ Fetching content with headless browser...",
+        loading_step2: "📸 Analyzing visual elements (screenshots)...",
+        loading_step3: "🤖 Evaluating with AI algorithms...",
+        geo_score: "GEO Score",
+        geo_score_desc: "Probability of being cited by AI Search Engines",
+        suggestion_prefix: "💡 Suggestion:",
+        impact_high: "Impact: High",
+        impact_medium: "Impact: Medium",
+        impact_low: "Impact: Low",
+        pro_lock: "🔒 Unlock with Pro",
+        score_structure: "Structure",
+        score_context: "Context",
+        score_freshness: "Freshness",
+        score_credibility: "Credibility",
+        login_suggest: "Login",
+        feat1_title: "Visual Reliability Analysis",
+        feat1_desc:
+          "Evaluate design clarity using Vision (image recognition) capabilities.",
+        feat2_title: "Full Dynamic Site Support",
+        feat2_desc:
+          "Accurately diagnose JS-rendered SPA sites exactly as they appear.",
+        feat3_title: "Specific Actionable Advice",
+        feat3_desc:
+          "Provide technical feedback that engineers and writers can fix immediately.",
+        credits_remain_prefix: "Monthly Credits Remaining: ",
+        credits_remain_suffix: " times",
+        btn_reset: "Analyze Another URL",
+        modal_title: "Login Required",
+        modal_desc:
+          "Please log in with your Google account to save and view diagnostic results.",
+        btn_google_login: "Sign in with Google",
+        btn_cancel: "Cancel",
+      },
+    };
+
+    function setLanguage(lang: "ja" | "en") {
+      currentLang = lang;
+
+      // ボタンUI更新
+      const btnJa = document.getElementById("lang-btn-ja");
+      const btnEn = document.getElementById("lang-btn-en");
+      const activeClass =
+        "px-4 py-1.5 rounded-md text-sm font-bold bg-white text-indigo-600 shadow-sm transition-all pointer-events-auto z-10";
+      const inactiveClass =
+        "px-4 py-1.5 rounded-md text-sm font-medium text-slate-500 hover:text-indigo-600 transition-all pointer-events-auto z-10";
+
+      if (btnJa && btnEn) {
+        if (lang === "ja") {
+          btnJa.className = activeClass;
+          btnEn.className = inactiveClass;
+        } else {
+          btnJa.className = inactiveClass;
+          btnEn.className = activeClass;
+        }
+      }
+
+      // テキスト更新
+      const t = translations[lang] as any;
+      const elements = document.querySelectorAll("[data-i18n]");
+      elements.forEach((el) => {
+        const key = el.getAttribute("data-i18n");
+        if (key && t[key]) {
+          if (key === "description") {
+            el.innerHTML = t[key];
+          } else {
+            el.textContent = t[key];
+          }
+        }
+      });
+    }
+
+    // ヘッダー要素
+    const headerLoginBtn = document.getElementById("header-login-btn");
+    const headerUserInfo = document.getElementById("header-user-info");
+    const headerLogoutBtn = document.getElementById("header-logout-btn");
+    const userEmailEl = document.getElementById("user-email");
+    const creditBadge = document.getElementById("credit-badge");
+
+    // 認証状態チェック
+    async function checkAuth() {
+      if (!supabase) return null;
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      currentUser = session?.user ?? null;
+      updateHeaderUI();
+      if (currentUser) {
+        console.log("Logged in as:", currentUser.email);
+      }
+      return currentUser;
+    }
+
+    // ヘッダーUI更新
+    function updateHeaderUI() {
+      if (currentUser) {
+        headerLoginBtn?.classList.add("hidden");
+        headerUserInfo?.classList.remove("hidden");
+        if (userEmailEl) userEmailEl.textContent = currentUser.email || "";
+      } else {
+        headerLoginBtn?.classList.remove("hidden");
+        headerUserInfo?.classList.add("hidden");
+        if (creditBadge) creditBadge.textContent = "残り: -回";
+      }
+    }
+
+    // ログアウト
+    async function logout() {
+      if (!supabase) return;
+      await supabase.auth.signOut();
+      currentUser = null;
+      updateHeaderUI();
+      window.location.reload();
+    }
+
+    // モーダル表示/非表示
+    function showLoginModal() {
+      loginModal.classList.remove("hidden");
+      loginModal.classList.add("flex");
+    }
+
+    function hideLoginModal() {
+      loginModal.classList.add("hidden");
+      loginModal.classList.remove("flex");
+    }
+
+    // Googleログイン
+    async function loginWithGoogle() {
+      if (!supabase) return;
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: "google",
+        options: {
+          redirectTo: window.location.href,
+        },
+      });
+      if (error) {
+        console.error("Login error:", error);
+      }
+    }
+
+    // イベントリスナー
+    googleLoginBtn?.addEventListener("click", loginWithGoogle);
+    closeModalBtn?.addEventListener("click", hideLoginModal);
+    loginModal?.addEventListener("click", (e) => {
+      if (e.target === loginModal) hideLoginModal();
+    });
+    headerLoginBtn?.addEventListener("click", showLoginModal);
+    headerLogoutBtn?.addEventListener("click", logout);
+    document
+      .getElementById("lang-btn-ja")
+      ?.addEventListener("click", () => setLanguage("ja"));
+    document
+      .getElementById("lang-btn-en")
+      ?.addEventListener("click", () => setLanguage("en"));
+
+    // 認証状態変更リスナー
+    if (supabase) {
+      supabase.auth.onAuthStateChange(async (event, session) => {
+        currentUser = session?.user ?? null;
+        updateHeaderUI();
+
+        if (event === "SIGNED_IN" && session?.user) {
+          hideLoginModal();
+          // ログイン後、保留中のURLがあれば自動診断
+          if (pendingUrl) {
+            const url = pendingUrl;
+            pendingUrl = null;
+            urlInput.value = url;
+            form.dispatchEvent(new Event("submit"));
+          }
+        }
+      });
+    }
+
+    // 初期化
+    checkAuth();
+
+    // Stripe Payment Link（環境変数から取得、未設定時はダミーURL）
+    const stripePaymentLink =
+      import.meta.env.PUBLIC_STRIPE_PAYMENT_LINK ||
+      "https://buy.stripe.com/test";
+
+    // Proプランアップグレードハンドラー
+    function handleUpgradeClick() {
+      // ユーザーIDをクエリパラメータに追加（Webhookで識別用）
+      const upgradeUrl = currentUser
+        ? `${stripePaymentLink}?client_reference_id=${currentUser.id}`
+        : stripePaymentLink;
+      window.open(upgradeUrl, "_blank");
+    }
+
+    // 既存のアップグレードボタンにもイベントリスナーを設定
+    const upgradeBtn = document.getElementById("upgrade-btn");
+    upgradeBtn?.addEventListener("click", handleUpgradeClick);
+
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
 
       const url = urlInput.value.trim();
       if (!url) return;
+
+      // 認証チェック（Supabase未設定時はスキップ）
+      if (supabaseUrl && supabaseAnonKey && !currentUser) {
+        pendingUrl = url;
+        showLoginModal();
+        return;
+      }
 
       // UI更新
       submitBtn.disabled = true;
@@ -292,20 +762,62 @@ import Layout from "../layouts/Layout.astro";
       animateLoading();
 
       try {
+        // 認証トークンを取得（ログイン済みの場合）
+        let authHeaders: Record<string, string> = {
+          "Content-Type": "application/json",
+        };
+        if (supabase && currentUser) {
+          const {
+            data: { session },
+          } = await supabase.auth.getSession();
+          if (session?.access_token) {
+            authHeaders["Authorization"] = `Bearer ${session.access_token}`;
+          }
+        }
+
         const response = await fetch("/api/diagnose", {
           method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ url }),
+          headers: authHeaders,
+          body: JSON.stringify({ url, language: currentLang }),
         });
 
-        if (!response.ok) {
-          const data = await response.json();
-          throw new Error(data.error || "診断に失敗しました");
+        // 401エラー（未ログイン）ハンドリング
+        if (response.status === 401) {
+          pendingUrl = url;
+          showLoginModal();
+          throw new Error("LOGIN_REQUIRED");
         }
 
         const data = await response.json();
+
+        if (!response.ok) {
+          // クレジット切れの場合は特別なUI表示
+          if (data.credits_exhausted) {
+            error.innerHTML = `
+              <div class="text-center">
+                <p class="font-bold mb-2">😢 ${data.error}</p>
+                <button id="upgrade-from-error" class="mt-3 bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-lg transition">
+                  Proプランにアップグレード
+                </button>
+              </div>
+            `;
+            error.classList.remove("hidden");
+            // アップグレードボタンのイベントリスナー
+            document
+              .getElementById("upgrade-from-error")
+              ?.addEventListener("click", handleUpgradeClick);
+            return;
+          }
+          throw new Error(data.error || "診断に失敗しました");
+        }
+
         displayResult(data);
       } catch (err) {
+        // ログイン誘導時はエラー表示しない
+        if (err instanceof Error && err.message === "LOGIN_REQUIRED") {
+          return;
+        }
+
         error.textContent =
           err instanceof Error ? err.message : "診断中にエラーが発生しました";
         error.classList.remove("hidden");
@@ -344,18 +856,20 @@ import Layout from "../layouts/Layout.astro";
     function displayResult(data: {
       summary: string;
       geo_score: number;
+      is_premium?: boolean;
+      free_credits?: number;
       scores?: {
-        information_gain: number;
-        entity_clarity: number;
-        format_suitability: number;
-        answer_directness: number;
-        hallucination_risk: number;
+        structure: number;
+        context: number;
+        freshness: number;
+        credibility: number;
       };
       strengths: string[];
       issues: {
         title: string;
         description: string;
         impact: string;
+        category?: string;
         suggestion?: string;
       }[];
       impression: string;
@@ -377,27 +891,46 @@ import Layout from "../layouts/Layout.astro";
         scoreDisplay.className = "text-5xl font-bold text-red-600";
       }
 
-      // 5指標詳細スコア
+      // 4軸詳細スコア + ブラックボックス制御
       const scoresDetail = document.getElementById(
         "scores-detail",
       ) as HTMLDivElement;
       if (data.scores) {
         scoresDetail.classList.remove("hidden");
+        const isPremium = data.is_premium || false;
+
         (
-          document.getElementById("score-info-gain") as HTMLDivElement
-        ).textContent = String(data.scores.information_gain);
+          document.getElementById("score-structure") as HTMLDivElement
+        ).textContent = String(data.scores.structure);
         (
-          document.getElementById("score-entity") as HTMLDivElement
-        ).textContent = String(data.scores.entity_clarity);
+          document.getElementById("score-context") as HTMLDivElement
+        ).textContent = isPremium ? String(data.scores.context) : "???";
         (
-          document.getElementById("score-format") as HTMLDivElement
-        ).textContent = String(data.scores.format_suitability);
+          document.getElementById("score-freshness") as HTMLDivElement
+        ).textContent = isPremium ? String(data.scores.freshness) : "???";
         (
-          document.getElementById("score-directness") as HTMLDivElement
-        ).textContent = String(data.scores.answer_directness);
-        (
-          document.getElementById("score-hallucination") as HTMLDivElement
-        ).textContent = String(data.scores.hallucination_risk);
+          document.getElementById("score-credibility") as HTMLDivElement
+        ).textContent = isPremium ? String(data.scores.credibility) : "???";
+
+        // ブラックボックス表示制御（無料ユーザー）
+        const maskContext = document.getElementById("mask-context");
+        const maskFreshness = document.getElementById("mask-freshness");
+        const maskCredibility = document.getElementById("mask-credibility");
+        const proUpgradeBanner = document.getElementById("pro-upgrade-banner");
+
+        if (isPremium) {
+          // Proユーザー: 全て表示
+          maskContext?.classList.add("hidden");
+          maskFreshness?.classList.add("hidden");
+          maskCredibility?.classList.add("hidden");
+          proUpgradeBanner?.classList.add("hidden");
+        } else {
+          // 無料ユーザー: Structure以外をマスク
+          maskContext?.classList.remove("hidden");
+          maskFreshness?.classList.remove("hidden");
+          maskCredibility?.classList.remove("hidden");
+          proUpgradeBanner?.classList.remove("hidden");
+        }
       } else {
         scoresDetail.classList.add("hidden");
       }
@@ -427,42 +960,118 @@ import Layout from "../layouts/Layout.astro";
       const issuesEl = document.getElementById(
         "result-issues",
       ) as HTMLDivElement;
+
+      let issuesHtml = "";
+
       if (data.issues.length > 0) {
-        issuesEl.innerHTML = data.issues
-          .map((issue) => {
-            const impactColor =
-              issue.impact === "大"
-                ? "bg-red-100 text-red-800"
-                : issue.impact === "中"
-                  ? "bg-yellow-100 text-yellow-800"
-                  : "bg-blue-100 text-blue-800";
+        issuesHtml = data.issues
+          .map((issue, index) => {
+            // 修正: API側で既にフィルタリングされているため、ここにあるものは全て表示してOK
+            // ただし念のためロックロジックは残すが、index >= 1 は実質発生しないはず(無料時)
+            const t = (translations as any)[currentLang];
+            // APIが全て返すようになった場合に備えて残すが、基本はfalseになる
+            const isLocked = !data.is_premium && index >= 999;
+
+            let impactClass = "bg-blue-100 text-blue-800";
+            let impactText = t.impact_low;
+
+            if (["High", "大"].includes(issue.impact)) {
+              impactClass = "bg-red-100 text-red-800";
+              impactText = t.impact_high;
+            } else if (["Medium", "中"].includes(issue.impact)) {
+              impactClass = "bg-yellow-100 text-yellow-800";
+              impactText = t.impact_medium;
+            }
+
             const suggestionHtml = issue.suggestion
               ? `<div class="mt-3 p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
-                  <p class="text-xs font-medium text-emerald-800 mb-1">💡 改善提案:</p>
-                  <p class="text-sm text-emerald-700">${issue.suggestion}</p>
-                </div>`
+                   <p class="text-xs font-medium text-emerald-800 mb-1">${t.suggestion_prefix}</p>
+                   <p class="text-sm text-emerald-700">${issue.suggestion}</p>
+                 </div>`
               : "";
+
             return `
-              <div class="bg-white rounded-lg p-4">
-                <div class="flex items-center gap-2 mb-2">
-                  <h4 class="font-bold text-amber-900">${issue.title}</h4>
-                  <span class="text-xs px-2 py-0.5 rounded ${impactColor}">影響: ${issue.impact}</span>
+              <div class="bg-white rounded-lg p-4 relative overflow-hidden group border border-slate-100 hover:shadow-md transition">
+                <div class="transition duration-500">
+                  <div class="flex items-center gap-2 mb-2">
+                    <h4 class="font-bold text-slate-800">${issue.title}</h4>
+                    <span class="text-xs px-2 py-0.5 rounded ${impactClass}">${impactText}</span>
+                  </div>
+                  <p class="text-slate-600 text-sm">${issue.description}</p>
+                  ${suggestionHtml}
                 </div>
-                <p class="text-slate-700 text-sm">${issue.description}</p>
-                ${suggestionHtml}
               </div>
             `;
           })
           .join("");
       } else {
-        issuesEl.innerHTML = `<div class="text-slate-500 italic p-4">特に改善すべきポイントは見つかりませんでした。</div>`;
+        issuesHtml = `<div class="text-slate-500 italic p-4">特に改善すべきポイントは見つかりませんでした。</div>`;
       }
+
+      // 無料ユーザーの場合、ダミーのロックされた改善案を表示してアップグレードを訴求
+      if (!data.is_premium) {
+        const t = (translations as any)[currentLang];
+        // ダミー要素を2つ追加
+        const dummyLockedHtml = `
+          <div class="bg-white rounded-lg p-4 relative overflow-hidden border border-slate-100">
+            <div class="filter blur-md select-none pointer-events-none opacity-50">
+              <div class="flex items-center gap-2 mb-2">
+                <h4 class="font-bold text-slate-800">██████████████</h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-red-100 text-red-800">${t.impact_high}</span>
+              </div>
+              <p class="text-slate-600 text-sm">██████████████████████████████████████████████████</p>
+            </div>
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer hover:bg-white/10 transition" onclick="document.getElementById('pro-upgrade-banner').scrollIntoView({behavior: 'smooth'})">
+                 <div class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 shadow-2xl transform hover:scale-105 transition border border-indigo-500">
+                    <span class="text-xl">🔒</span>
+                    <span>${t.pro_lock}</span>
+                 </div>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg p-4 relative overflow-hidden border border-slate-100">
+            <div class="filter blur-md select-none pointer-events-none opacity-50">
+               <div class="flex items-center gap-2 mb-2">
+                <h4 class="font-bold text-slate-800">██████████</h4>
+                <span class="text-xs px-2 py-0.5 rounded bg-yellow-100 text-yellow-800">${t.impact_medium}</span>
+              </div>
+              <p class="text-slate-600 text-sm">████████████████████████████████████</p>
+            </div>
+            <div class="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer hover:bg-white/10 transition" onclick="document.getElementById('pro-upgrade-banner').scrollIntoView({behavior: 'smooth'})">
+                 <div class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 shadow-2xl transform hover:scale-105 transition border border-indigo-500">
+                    <span class="text-xl">🔒</span>
+                    <span>${t.pro_lock}</span>
+                 </div>
+            </div>
+          </div>
+        `;
+        issuesHtml += dummyLockedHtml;
+      }
+
+      issuesEl.innerHTML = issuesHtml;
 
       // AI検索プレビュー
       const impressionEl = document.getElementById(
         "result-impression",
       ) as HTMLDivElement;
       impressionEl.textContent = data.impression;
+
+      // 残りクレジット数の更新（無料ユーザーのみ）
+      const remainingCredits = document.getElementById(
+        "remaining-credits",
+      ) as HTMLDivElement;
+      const remainingCreditsCount = document.getElementById(
+        "remaining-credits-count",
+      ) as HTMLSpanElement;
+      if (!data.is_premium && data.free_credits !== undefined) {
+        remainingCredits.classList.remove("hidden");
+        remainingCreditsCount.textContent = String(data.free_credits);
+        // ログインモーダルのクレジット表示も更新
+        creditsInfo.classList.remove("hidden");
+        creditsCount.textContent = String(data.free_credits);
+      } else {
+        remainingCredits.classList.add("hidden");
+        creditsInfo.classList.add("hidden");
+      }
 
       result.classList.remove("hidden");
       result.scrollIntoView({ behavior: "smooth" });

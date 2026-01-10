@@ -12,6 +12,7 @@
     "@astrojs/node": "^9.5.1",
     "@astrojs/vercel": "^8.0.4",
     "@sparticuz/chromium": "^143.0.4",
+    "@supabase/supabase-js": "^2.90.1",
     "@tailwindcss/vite": "^4.1.18",
     "astro": "^5.16.6",
     "cheerio": "^1.1.2",

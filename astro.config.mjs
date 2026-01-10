@@ -8,6 +8,12 @@ export default defineConfig({
   output: 'server',
   adapter: vercel(),
   vite: {
-    plugins: [tailwindcss()]
+    plugins: [tailwindcss()],
+    envPrefix: ['VITE_', 'PUBLIC_', 'SUPABASE_'],
+    server: {
+      fs: {
+        strict: false
+      }
+    }
   }
 });

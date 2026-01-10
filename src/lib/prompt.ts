@@ -1,7 +1,12 @@
 import type { StructuredLP } from './scraper';
 
-// GEO診断用システムプロンプト
-export const GEO_SYSTEM_PROMPT = `# Role
+// GEO診断用システムプロンプト（4軸評価 - CLAUDE2.md準拠）
+export function getSystemPrompt(lang: 'ja' | 'en' = 'ja'): string {
+  const langInstruction = lang === 'en'
+    ? "\n\n# Language Constraint\n**MUST OUTPUT ALL TEXT VALUES IN ENGLISH.** The output JSON must be in English."
+    : "\n\n# Language Constraint\n**出力される全てのテキスト値は日本語で記述すること。**";
+
+  return `# Role
 あなたは、Google AI Overviews, ChatGPT Search, Perplexity などの「検索拡張生成（RAG）」エンジンのアルゴリズムシミュレーターです。
 ユーザーが入力したWebページの内容（テキストおよびスクリーンショット）を複合的に評価し、**「AIがユーザーの質問に対する回答ソースとして引用するか否か」**を冷徹に判定してください。
 
@@ -11,14 +16,13 @@ export const GEO_SYSTEM_PROMPT = `# Role
 - 画像（スクリーンショット）が提供されている場合は、視覚的な信頼性（デザイン、図解の有無、UIの整理状態）も評価に加えること。
 - **重要**: 提供されたコードブロック、本文テキスト、見出し構造を必ず確認すること。実際にコードや解決策が存在する場合は「存在しない」と誤診断してはならない。
 
-# Evaluation Criteria (GEO 5つの指標)
-以下の基準でコンテンツをスコアリングおよび分析せよ。各指標を0〜100で個別にスコア化すること。
+# Evaluation Criteria (GEO 4つの評価軸)
+以下の4軸でコンテンツをスコアリングおよび分析せよ。各指標を0〜100で個別にスコア化すること。
 
-1. **Information Gain (情報獲得量)**: 既存の大手メディアの一般的な記述に対し、このページ固有の「具体的数値」「一次体験」「独自データ」がどれだけ含まれているか。
-2. **Entity Clarity (エンティティの明確性)**: 主語、述語、固有名詞の関係性が明確か。ページ構造やデザインから情報の階層が理解しやすいか。見出し構造（h1/h2/h3）が適切に階層化されているか。
-3. **Format Suitability (引用形式への適合)**: 箇条書き、比較表、ステップ形式など、AIが回答生成時に「抜粋」しやすいフォーマットが使われているか。コードブロックが適切にマークアップされているか。
-4. **Answer Directness (回答の直接性)**: ファーストビューで結論（定義や答え）を提示しているか。無駄なイントロダクションや広告で情報が埋もれていないか。
-5. **Hallucination Risk (幻覚リスク / 信頼性)**: 曖昧な表現がないか。外部リンクで根拠を示しているか。デザインが「詐欺的」「低品質」に見えないか。
+1. **Structure (構造・機械可読性)**: HTMLタグ、リスト、テーブル、Schema.orgの実装状況。「Redditのスレッドよりパースしやすいか？」h1/h2/h3の階層化、比較表の作成、構造化データの有無を評価。
+2. **Context (文脈・意味理解)**: 固有表現密度（バージョン名等の具体性）、主語の明快さ、論理構成。「公式より具体的で、要約しやすいか？」指示語（あれ・それ）の使用頻度、具体的バージョン/エラーコードの記載を評価。
+3. **Freshness (情報の鮮度)**: タイムスタンプ、記事内の「時点」特定キーワード。「今のAI（RAG）が最新情報と認識するか？」更新日の明記、本文への「2025年時点」等の追記を評価。
+4. **Credibility (信頼性シグナル)**: 引用・出典（Outbound Links）、著者情報。「AIがハルシネーション（嘘）と判定しないか？」公式ドキュメントへの発リンク、一次情報（ログ・検証画像）の有無を評価。
 
 # Output Schema (JSON Only)
 以下のJSON形式のみを出力せよ。マークダウンのコードブロックは不要。
@@ -27,11 +31,10 @@ export const GEO_SYSTEM_PROMPT = `# Role
   "summary": "AI検索エンジンから見たこのページの評価（150文字以内）。引用に値するか、単なるノイズとして処理されるかを断言する。",
   "geo_score": 0〜100の整数（引用採用確率）,
   "scores": {
-    "information_gain": 0〜100,
-    "entity_clarity": 0〜100,
-    "format_suitability": 0〜100,
-    "answer_directness": 0〜100,
-    "hallucination_risk": 0〜100
+    "structure": 0〜100,
+    "context": 0〜100,
+    "freshness": 0〜100,
+    "credibility": 0〜100
   },
   "strengths": [
     "AIが引用しやすいと感じた具体的な箇所（例：価格比較表がMarkdownで記述されている点）。少なくとも3〜5点列挙すること。"
@@ -40,7 +43,8 @@ export const GEO_SYSTEM_PROMPT = `# Role
     {
       "title": "改善すべき点のタイトル（些細な点でも可）",
       "description": "なぜそれがAIにとってマイナスなのかの技術的解説",
-      "impact": "引用機会の損失度（大/中/小）",
+      "impact": "引用機会の損失度（大/中/小） ※英語の場合は High/Medium/Low",
+      "category": "structure|context|freshness|credibility",
       "suggestion": "具体的な改善提案（コード変更や構成変更の指示）"
     }
   ],
@@ -48,8 +52,10 @@ export const GEO_SYSTEM_PROMPT = `# Role
 }
 
 # Important Evaluation Rules
-- **issues（改善点）は必ず3つ以上見つけること。** 完璧なページは存在しない。些細な改善点（例：見出し階層の最適化、alt属性の具体化、構造化データの追加提案など）でも良いので、必ず3つ以上リストアップせよ。
-- **geo_score** は甘くつけないこと。80点以上は「Wikipedia並みに構造化された完璧な記事」のみ。通常の良記事は60-75点程度。`;
+- **issues（改善点）は必ず3つ以上見つけること。** 完璧なページは存在しない。些細な改善点でも良いので、必ず3つ以上リストアップせよ。
+- **issues.category** は必ず4軸のいずれかを指定すること（structure/context/freshness/credibility）。
+- **geo_score** は甘くつけないこと。80点以上は「Wikipedia並みに構造化された完璧な記事」のみ。通常の良記事は60-75点程度。${langInstruction}`;
+}
 
 // LP構造をMarkdown形式に変換
 export function structuredLPToMarkdown(lp: StructuredLP): string {
@@ -146,11 +152,14 @@ export function structuredLPToMarkdown(lp: StructuredLP): string {
 }
 
 // GEO診断プロンプト生成
-export function buildGEOPrompt(lp: StructuredLP): string {
+export function buildGEOPrompt(lp: StructuredLP, lang: 'ja' | 'en' = 'ja'): string {
   const markdown = structuredLPToMarkdown(lp);
 
-  return `以下のWebページのコンテンツをGEO（Generative Engine Optimization）の観点から評価してください。
-提供されたスクリーンショット画像も参照し、視覚的な信頼性や情報の伝わりやすさも加味して分析してください。
+  const instruction = lang === 'en'
+    ? "Please evaluate the following web page content from the perspective of GEO (Generative Engine Optimization).\nAlso analyze the provided screenshot for visual reliability."
+    : "以下のWebページのコンテンツをGEO（Generative Engine Optimization）の観点から評価してください。\n提供されたスクリーンショット画像も参照し、視覚的な信頼性や情報の伝わりやすさも加味して分析してください。";
+
+  return `${instruction}
 
 ## 対象URL
 ${lp.url}
@@ -158,25 +167,25 @@ ${lp.url}
 ## ページコンテンツ（Markdown形式）
 ${markdown}
 
-上記のコンテンツ（テキストおよび画像）を評価し、指定されたJSON形式で出力してください。`;
+${lang === 'en' ? 'Evaluate the content above and output in the specified JSON format.' : '上記のコンテンツ（テキストおよび画像）を評価し、指定されたJSON形式で出力してください。'}`;
 }
 
-// 診断結果の型定義
+// 診断結果の型定義（4軸評価）
 export interface GEODiagnosisResult {
   summary: string;
   geo_score: number;
   scores?: {
-    information_gain: number;
-    entity_clarity: number;
-    format_suitability: number;
-    answer_directness: number;
-    hallucination_risk: number;
+    structure: number;
+    context: number;
+    freshness: number;
+    credibility: number;
   };
   strengths: string[];
   issues: {
     title: string;
     description: string;
     impact: string;
+    category?: 'structure' | 'context' | 'freshness' | 'credibility';
     suggestion?: string;
   }[];
   impression: string;
