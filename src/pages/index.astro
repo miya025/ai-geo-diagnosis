@@ -33,7 +33,7 @@ if (ipCountry === "JP") {
         >
           ログイン
         </button>
-        <div id="header-user-info" class="hidden flex items-center gap-3">
+        <div id="header-user-info" class="hidden items-center gap-3">
           <div class="text-right">
             <p id="user-email" class="text-xs text-slate-500"></p>
             <span
@@ -805,12 +805,14 @@ if (ipCountry === "JP") {
       if (currentUser) {
         headerLoginBtn?.classList.add("hidden");
         headerUserInfo?.classList.remove("hidden");
+        headerUserInfo?.classList.add("flex");
         if (userEmailEl) userEmailEl.textContent = currentUser.email || "";
         // ログイン時は fetchUserProfile で非同期に更新されるため、ここでは初期値のままにしない
         // ただし、ちらつき防止のために何もしないか、読み込み中を表示する
       } else {
         headerLoginBtn?.classList.remove("hidden");
         headerUserInfo?.classList.add("hidden");
+        headerUserInfo?.classList.remove("flex");
         if (creditBadge) creditBadge.textContent = "残り: -回";
       }
     }
@@ -940,7 +942,14 @@ if (ipCountry === "JP") {
     }
 
     // ブラウザバック時などにボタンの状態をリセット
-    window.addEventListener("pageshow", () => {
+    window.addEventListener("pageshow", (event) => {
+      // BFCacheから復帰した場合は認証状態を再チェック
+      if (event.persisted) {
+        checkAuth();
+      }
+      // ヘッダーUI状態をリセット
+      updateHeaderUI();
+
       const upgradeBtn = document.getElementById(
         "upgrade-btn",
       ) as HTMLButtonElement | null;
@@ -1198,11 +1207,9 @@ if (ipCountry === "JP") {
       if (data.issues.length > 0) {
         issuesHtml = data.issues
           .map((issue, index) => {
-            // 修正: API側で既にフィルタリングされているため、ここにあるものは全て表示してOK
-            // ただし念のためロックロジックは残すが、index >= 1 は実質発生しないはず(無料時)
             const t = (translations as any)[currentLang];
-            // APIが全て返すようになった場合に備えて残すが、基本はfalseになる
-            const isLocked = !data.is_premium && index >= 999;
+            // 無料ユーザーは1個目以外マスク表示
+            const isLocked = !data.is_premium && index >= 1;
 
             let impactClass = "bg-blue-100 text-blue-800";
             let impactText = t.impact_low;
@@ -1221,6 +1228,26 @@ if (ipCountry === "JP") {
                    <p class="text-sm text-emerald-700">${issue.suggestion}</p>
                  </div>`
               : "";
+
+            // ロックされている場合はマスク表示
+            if (isLocked) {
+              return `
+                <div class="bg-white rounded-lg p-4 relative overflow-hidden border border-slate-100">
+                  <div class="filter blur-md select-none pointer-events-none opacity-50">
+                    <div class="flex items-center gap-2 mb-2">
+                      <h4 class="font-bold text-slate-800">██████████████</h4>
+                      <span class="text-xs px-2 py-0.5 rounded ${impactClass}">${impactText}</span>
+                    </div>
+                    <p class="text-slate-600 text-sm">██████████████████████████████████████████████████</p>
+                  </div>
+                  <div class="absolute inset-0 flex flex-col items-center justify-center z-10 cursor-pointer hover:bg-white/10 transition" onclick="document.getElementById('pro-upgrade-banner').scrollIntoView({behavior: 'smooth'})">
+                       <div class="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 shadow-2xl transform hover:scale-105 transition border border-indigo-500">
+                          <span>${t.pro_lock}</span>
+                       </div>
+                  </div>
+                </div>
+              `;
+            }
 
             return `
               <div class="bg-white rounded-lg p-4 relative overflow-hidden group border border-slate-100 hover:shadow-md transition">
