@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 // 環境変数から設定を取得
 const supabaseUrl = import.meta.env.SUPABASE_URL || process.env.SUPABASE_URL || '';
@@ -37,8 +37,9 @@ export interface AnalysisResult {
 /**
  * ユーザープロフィールを取得
  */
-export async function getProfile(userId: string): Promise<Profile | null> {
-    const { data, error } = await supabase
+export async function getProfile(userId: string, client?: SupabaseClient): Promise<Profile | null> {
+    const s = client || supabase;
+    const { data, error } = await s
         .from('profiles')
         .select('*')
         .eq('id', userId)
@@ -55,8 +56,9 @@ export async function getProfile(userId: string): Promise<Profile | null> {
  * 30日ローリング制限チェック + クレジットリセット
  * - credits_reset_at から30日経過していたらクレジットを3に戻す
  */
-export async function checkAndResetCredits(userId: string): Promise<Profile | null> {
-    const profile = await getProfile(userId);
+export async function checkAndResetCredits(userId: string, client?: SupabaseClient): Promise<Profile | null> {
+    const s = client || supabase;
+    const profile = await getProfile(userId, s);
     if (!profile) return null;
 
     const now = new Date();
@@ -65,7 +67,7 @@ export async function checkAndResetCredits(userId: string): Promise<Profile | nu
     // リセット日が未設定 or 30日経過している場合
     if (!resetAt || now.getTime() - resetAt.getTime() > 30 * 24 * 60 * 60 * 1000) {
         const newResetAt = now.toISOString();
-        const { data, error } = await supabase
+        const { data, error } = await s
             .from('profiles')
             .update({ free_credits: 3, credits_reset_at: newResetAt })
             .eq('id', userId)
@@ -85,8 +87,9 @@ export async function checkAndResetCredits(userId: string): Promise<Profile | nu
 /**
  * クレジットを消費（1減らす）
  */
-export async function consumeCredit(userId: string): Promise<boolean> {
-    const profile = await checkAndResetCredits(userId);
+export async function consumeCredit(userId: string, client?: SupabaseClient): Promise<boolean> {
+    const s = client || supabase;
+    const profile = await checkAndResetCredits(userId, s);
     if (!profile) return false;
 
     if (profile.is_premium) {
@@ -98,7 +101,7 @@ export async function consumeCredit(userId: string): Promise<boolean> {
         return false; // クレジット不足
     }
 
-    const { error } = await supabase
+    const { error } = await s
         .from('profiles')
         .update({ free_credits: profile.free_credits - 1 })
         .eq('id', userId);

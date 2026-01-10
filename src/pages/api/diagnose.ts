@@ -1,4 +1,5 @@
 import type { APIRoute } from 'astro';
+import { createClient } from '@supabase/supabase-js';
 import { scrapeUrl } from '../../lib/scraper';
 import {
   getSystemPrompt,
@@ -133,20 +134,33 @@ export const POST: APIRoute = async ({ request }) => {
     let isPremium = false;
     let freeCredits = 3;
     let userId: string | null = null;
+    let authClient: any = null; // 後でconsumeCreditでも使うため
 
     // Authorizationヘッダーからトークンを取得
     const authHeader = request.headers.get('Authorization');
     if (authHeader?.startsWith('Bearer ')) {
       const token = authHeader.substring(7);
 
+      const supabaseUrl = import.meta.env.SUPABASE_URL || process.env.SUPABASE_URL || '';
+      const supabaseAnonKey = import.meta.env.SUPABASE_ANON_KEY || process.env.SUPABASE_ANON_KEY || '';
+
+      // 認証済みクライアント作成
+      authClient = createClient(supabaseUrl, supabaseAnonKey, {
+        global: {
+          headers: {
+            Authorization: authHeader,
+          },
+        },
+      });
+
       // Supabaseでユーザー情報を取得
-      const { data: { user }, error: authError } = await supabase.auth.getUser(token);
+      const { data: { user }, error: authError } = await authClient.auth.getUser();
 
       if (!authError && user) {
         userId = user.id;
 
-        // プロフィール取得（30日リセットチェック込み）
-        const profile = await checkAndResetCredits(userId);
+        // authClientを渡す
+        const profile = await checkAndResetCredits(user.id, authClient);
 
         if (profile) {
           isPremium = profile.is_premium;
@@ -278,7 +292,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Step 5: クレジット消費（無料ユーザーのみ、キャッシュヒット時は消費しない）
     let newFreeCredits = freeCredits;
     if (userId && !isPremium) {
-      const consumed = await consumeCredit(userId);
+      const consumed = await consumeCredit(userId, authClient);
       if (consumed) {
         newFreeCredits = freeCredits - 1;
         console.log(`Credit consumed. Remaining: ${newFreeCredits}`);
