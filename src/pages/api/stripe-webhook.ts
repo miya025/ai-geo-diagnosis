@@ -1,5 +1,6 @@
 import type { APIRoute } from 'astro';
 import { supabase } from '../../lib/supabase';
+import Stripe from 'stripe';
 
 export const prerender = false;
 
@@ -16,59 +17,54 @@ export const prerender = false;
  * 4. Webhook Secretを.envのSTRIPE_WEBHOOK_SECRETに設定
  */
 
-interface StripeCheckoutSession {
-    id: string;
-    object: 'checkout.session';
-    client_reference_id: string | null;  // ユーザーID
-    customer_email: string | null;
-    payment_status: 'paid' | 'unpaid' | 'no_payment_required';
-    status: 'open' | 'complete' | 'expired';
-}
-
-interface StripeEvent {
-    id: string;
-    type: string;
-    data: {
-        object: StripeCheckoutSession;
-    };
-}
-
 export const POST: APIRoute = async ({ request }) => {
+    const signature = request.headers.get('stripe-signature');
+    const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
+    const stripeSecretKey = import.meta.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY;
+
+    if (!signature || !webhookSecret) {
+        return new Response(JSON.stringify({ error: 'Missing signature or webhook secret' }), {
+            status: 400,
+            headers: { 'Content-Type': 'application/json' },
+        });
+    }
+
+    // Stripeクライアントの初期化（署名検証に必要ない場合もあるが、型定義などで使用）
+    // 注意: constructEventは静的メソッドなのでインスタンス化しなくても使えるが、
+    // 将来的な拡張（API呼び出しなど）のために初期化しておくのが一般的
+    if (!stripeSecretKey) {
+        console.warn('STRIPE_SECRET_KEY is missing. Webhook verification might fail strictly.');
+    }
+    const stripe = new Stripe(stripeSecretKey || '', {
+        typescript: true,
+    });
+
     try {
-        const webhookSecret = import.meta.env.STRIPE_WEBHOOK_SECRET || process.env.STRIPE_WEBHOOK_SECRET;
-
-        // 署名検証（本番では必須）
-        const signature = request.headers.get('stripe-signature');
-        if (!signature && webhookSecret) {
-            console.warn('Missing Stripe signature header');
-            // 開発環境では署名なしでも続行可能にする（本番では拒否すべき）
-        }
-
-        // リクエストボディをパース
         const body = await request.text();
-        let event: StripeEvent;
+        let event: Stripe.Event;
 
         try {
-            event = JSON.parse(body);
-        } catch {
-            return new Response(JSON.stringify({ error: 'Invalid JSON' }), {
+            // 署名を検証し、イベントオブジェクトを構築
+            event = stripe.webhooks.constructEvent(body, signature, webhookSecret);
+        } catch (err) {
+            console.error(`Webhook signature verification failed.`, err);
+            return new Response(JSON.stringify({ error: `Webhook Error: ${err instanceof Error ? err.message : 'Unknown'}` }), {
                 status: 400,
                 headers: { 'Content-Type': 'application/json' },
             });
         }
 
-        console.log('Stripe webhook received:', event.type);
+        console.log('Stripe webhook received and verified:', event.type);
 
         // checkout.session.completed イベントの処理
         if (event.type === 'checkout.session.completed') {
-            const session = event.data.object;
+            const session = event.data.object as Stripe.Checkout.Session;
 
             // client_reference_id からユーザーIDを取得
             const userId = session.client_reference_id;
 
             if (!userId) {
                 console.error('No client_reference_id in checkout session:', session.id);
-                // customer_emailからユーザーを検索する代替ロジックも可能
                 return new Response(JSON.stringify({ error: 'No user ID provided' }), {
                     status: 400,
                     headers: { 'Content-Type': 'application/json' },
@@ -97,7 +93,6 @@ export const POST: APIRoute = async ({ request }) => {
             }
         }
 
-        // Stripeには200を返す（再送防止）
         return new Response(JSON.stringify({ received: true }), {
             status: 200,
             headers: { 'Content-Type': 'application/json' },

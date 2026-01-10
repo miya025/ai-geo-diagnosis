@@ -176,7 +176,9 @@ import Layout from "../layouts/Layout.astro";
               --
             </div>
             <p class="text-xs text-slate-600 mt-1">Structure</p>
-            <p class="text-xs text-slate-400">構造・機械可読性</p>
+            <p class="text-xs text-slate-400" data-i18n="desc_structure">
+              構造・機械可読性
+            </p>
           </div>
           <!-- Context（無料はマスク） -->
           <div
@@ -187,14 +189,18 @@ import Layout from "../layouts/Layout.astro";
               --
             </div>
             <p class="text-xs text-slate-600 mt-1">Context</p>
-            <p class="text-xs text-slate-400">文脈・意味理解</p>
+            <p class="text-xs text-slate-400" data-i18n="desc_context">
+              文脈・意味理解
+            </p>
             <!-- マスク -->
             <div
               id="mask-context"
               class="absolute inset-0 bg-slate-800/90 rounded-xl flex flex-col items-center justify-center hidden"
             >
               <span class="text-2xl mb-1">🔒</span>
-              <span class="text-white font-bold text-lg">指標B</span>
+              <span class="text-white font-bold text-lg" data-i18n="metric_b"
+                >指標B</span
+              >
             </div>
           </div>
           <!-- Freshness（無料はマスク） -->
@@ -206,14 +212,18 @@ import Layout from "../layouts/Layout.astro";
               --
             </div>
             <p class="text-xs text-slate-600 mt-1">Freshness</p>
-            <p class="text-xs text-slate-400">情報の鮮度</p>
+            <p class="text-xs text-slate-400" data-i18n="desc_freshness">
+              情報の鮮度
+            </p>
             <!-- マスク -->
             <div
               id="mask-freshness"
               class="absolute inset-0 bg-slate-800/90 rounded-xl flex flex-col items-center justify-center hidden"
             >
               <span class="text-2xl mb-1">🔒</span>
-              <span class="text-white font-bold text-lg">指標C</span>
+              <span class="text-white font-bold text-lg" data-i18n="metric_c"
+                >指標C</span
+              >
             </div>
           </div>
           <!-- Credibility（無料はマスク） -->
@@ -228,14 +238,18 @@ import Layout from "../layouts/Layout.astro";
               --
             </div>
             <p class="text-xs text-slate-600 mt-1">Credibility</p>
-            <p class="text-xs text-slate-400">信頼性シグナル</p>
+            <p class="text-xs text-slate-400" data-i18n="desc_credibility">
+              信頼性シグナル
+            </p>
             <!-- マスク -->
             <div
               id="mask-credibility"
               class="absolute inset-0 bg-slate-800/90 rounded-xl flex flex-col items-center justify-center hidden"
             >
               <span class="text-2xl mb-1">🔒</span>
-              <span class="text-white font-bold text-lg">指標D</span>
+              <span class="text-white font-bold text-lg" data-i18n="metric_d"
+                >指標D</span
+              >
             </div>
           </div>
         </div>
@@ -244,15 +258,16 @@ import Layout from "../layouts/Layout.astro";
           id="pro-upgrade-banner"
           class="hidden mt-6 p-4 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl text-white"
         >
-          <p class="font-bold mb-1">
+          <p class="font-bold mb-1" data-i18n="pro_banner_title">
             🔒 AIに見落とされる致命的な原因があります
           </p>
-          <p class="text-sm opacity-90 mb-3">
+          <p class="text-sm opacity-90 mb-3" data-i18n="pro_banner_desc">
             Proプランで3つの謎の指標を解除し、すべての改善アドバイスを確認できます。
           </p>
           <button
             id="upgrade-btn"
             class="bg-white text-indigo-600 font-bold py-2 px-6 rounded-lg hover:bg-indigo-50 transition"
+            data-i18n="btn_pro_plan"
           >
             Proプランを見る（月額1,980円）
           </button>
@@ -520,6 +535,20 @@ import Layout from "../layouts/Layout.astro";
         score_context: "Context (文脈)",
         score_freshness: "Freshness (鮮度)",
         score_credibility: "Credibility (信頼性)",
+
+        desc_structure: "構造・機械可読性",
+        desc_context: "文脈・意味理解",
+        desc_freshness: "情報の鮮度",
+        desc_credibility: "信頼性シグナル",
+        metric_b: "指標B",
+        metric_c: "指標C",
+        metric_d: "指標D",
+        pro_banner_title: "🔒 AIに見落とされる致命的な原因があります",
+        pro_banner_desc:
+          "Proプランで3つの謎の指標を解除し、すべての改善アドバイスを確認できます。",
+        btn_pro_plan: "Proプランを見る（月額1,980円）",
+        no_strengths_found: "特に評価されるポイントは見つかりませんでした。",
+        no_issues_found: "特に改善すべきポイントは見つかりませんでした。",
         login_suggest: "ログイン",
         feat1_title: "視覚的信頼性を分析",
         feat1_desc:
@@ -559,6 +588,20 @@ import Layout from "../layouts/Layout.astro";
         score_context: "Context",
         score_freshness: "Freshness",
         score_credibility: "Credibility",
+
+        desc_structure: "Schema & Machine Readability",
+        desc_context: "Context & Semantic Understanding",
+        desc_freshness: "Freshness & Updates",
+        desc_credibility: "Credibility Signals",
+        metric_b: "Metric B",
+        metric_c: "Metric C",
+        metric_d: "Metric D",
+        pro_banner_title: "🔒 Critical issues detected",
+        pro_banner_desc:
+          "Unlock all 4 metrics and full improvement advice with Pro Plan.",
+        btn_pro_plan: "Get Pro Plan ($20/mo)",
+        no_strengths_found: "No specific strengths found.",
+        no_issues_found: "No specific issues found.",
         login_suggest: "Login",
         feat1_title: "Visual Reliability Analysis",
         feat1_desc:
@@ -1003,6 +1046,8 @@ import Layout from "../layouts/Layout.astro";
       const strengthsEl = document.getElementById(
         "result-strengths",
       ) as HTMLUListElement;
+      const t = (translations as any)[currentLang];
+
       if (data.strengths.length > 0) {
         strengthsEl.innerHTML = data.strengths
           .map(
@@ -1011,7 +1056,7 @@ import Layout from "../layouts/Layout.astro";
           )
           .join("");
       } else {
-        strengthsEl.innerHTML = `<li class="text-slate-500 italic">特に評価されるポイントは見つかりませんでした。</li>`;
+        strengthsEl.innerHTML = `<li class="text-slate-500 italic">${t.no_strengths_found}</li>`;
       }
 
       // 気になる点（引用機会への影響度付き）
@@ -1063,7 +1108,7 @@ import Layout from "../layouts/Layout.astro";
           })
           .join("");
       } else {
-        issuesHtml = `<div class="text-slate-500 italic p-4">特に改善すべきポイントは見つかりませんでした。</div>`;
+        issuesHtml = `<div class="text-slate-500 italic p-4">${t.no_issues_found}</div>`;
       }
 
       // 無料ユーザーの場合、ダミーのロックされた改善案を表示してアップグレードを訴求
@@ -1111,7 +1156,11 @@ import Layout from "../layouts/Layout.astro";
       const impressionEl = document.getElementById(
         "result-impression",
       ) as HTMLDivElement;
-      impressionEl.textContent = data.impression;
+      // 簡易Markdownパーサー: **bold** を <strong>bold</strong> に変換
+      const formattedImpression = data.impression
+        .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
+        .replace(/\n/g, "<br />"); // Newlines
+      impressionEl.innerHTML = formattedImpression;
 
       // 残りクレジット数の更新（無料ユーザーのみ）
       const remainingCredits = document.getElementById(

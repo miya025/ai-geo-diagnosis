@@ -28,13 +28,28 @@ export const GET: APIRoute = async ({ request }) => {
         }
 
         // プロフィール取得（30日リセットチェック込み）
-        const profile = await checkAndResetCredits(user.id);
+        let profile = await checkAndResetCredits(user.id);
 
+        // プロフィールが存在しない場合（トリガー不整合などで作成されなかった場合）
+        // デフォルト値で新規作成して返す
         if (!profile) {
-            return new Response(JSON.stringify({ error: 'Profile not found' }), {
-                status: 404,
-                headers: { 'Content-Type': 'application/json' },
-            });
+            console.warn(`Profile missing for user ${user.id}. Creating default profile.`);
+            const { data: newProfile, error: createError } = await supabase
+                .from('profiles')
+                .insert({
+                    id: user.id,
+                    free_credits: 3,
+                    is_premium: false,
+                    language: 'ja',
+                    credits_reset_at: new Date().toISOString()
+                })
+                .select()
+                .single();
+
+            if (createError || !newProfile) {
+                throw new Error('Failed to create missing profile');
+            }
+            profile = newProfile;
         }
 
         return new Response(JSON.stringify({

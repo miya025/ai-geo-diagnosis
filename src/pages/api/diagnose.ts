@@ -234,10 +234,11 @@ export const POST: APIRoute = async ({ request }) => {
     if (result.issues) console.log('Issues count:', result.issues.length);
 
     // バリデーションとデフォルト値設定
-    if (!result.summary) result.summary = "診断結果の要約生成に失敗しました。";
+    const isEn = language === 'en';
+    if (!result.summary) result.summary = isEn ? "Failed to generate diagnosis summary." : "診断結果の要約生成に失敗しました。";
     if (!Array.isArray(result.strengths)) result.strengths = [];
     if (!Array.isArray(result.issues)) result.issues = [];
-    if (!result.impression) result.impression = "AIによる評価コメントの生成に失敗しました。";
+    if (!result.impression) result.impression = isEn ? "Failed to generate AI evaluation comments." : "AIによる評価コメントの生成に失敗しました。";
 
     // geo_scoreのバリデーション（0-100の範囲）
     if (typeof result.geo_score !== 'number' || result.geo_score < 0 || result.geo_score > 100) {
@@ -298,7 +299,7 @@ export const POST: APIRoute = async ({ request }) => {
       // 【修正】アドバイスの隠蔽
       // 無料ユーザーには「Structure」カテゴリのアドバイスを「1つだけ」返す
       if (result.issues && result.issues.length > 0) {
-        const structureIssues = result.issues.filter(i => i.category === 'structure');
+        const structureIssues = result.issues.filter(i => i.category?.toLowerCase() === 'structure');
         // Structureがあればその先頭1つ、なければ空にする
         result.issues = structureIssues.slice(0, 1);
       } else {
