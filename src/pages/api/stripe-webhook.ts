@@ -59,6 +59,7 @@ export const POST: APIRoute = async ({ request }) => {
         // checkout.session.completed イベントの処理
         if (event.type === 'checkout.session.completed') {
             const session = event.data.object as Stripe.Checkout.Session;
+            const customerId = session.customer as string;
 
             // client_reference_id からユーザーIDを取得
             const userId = session.client_reference_id;
@@ -75,10 +76,13 @@ export const POST: APIRoute = async ({ request }) => {
             if (session.payment_status === 'paid') {
                 console.log(`Upgrading user ${userId} to Premium`);
 
-                // profiles.is_premium を true に更新
+                // profiles.is_premium を true に更新し、stripe_customer_id も保存
                 const { error: updateError } = await supabase
                     .from('profiles')
-                    .update({ is_premium: true })
+                    .update({
+                        is_premium: true,
+                        stripe_customer_id: customerId
+                    })
                     .eq('id', userId);
 
                 if (updateError) {
@@ -90,6 +94,30 @@ export const POST: APIRoute = async ({ request }) => {
                 }
 
                 console.log(`User ${userId} successfully upgraded to Premium`);
+            }
+        }
+
+
+        // customer.subscription.deleted イベントの処理（解約・期限切れ時のダウングレード）
+        if (event.type === 'customer.subscription.deleted') {
+            const subscription = event.data.object as Stripe.Subscription;
+            const customerId = subscription.customer as string;
+
+            if (customerId) {
+                console.log(`Processing subscription deletion for customer: ${customerId}`);
+
+                // stripe_customer_id に一致するユーザーの is_premium を false に更新
+                const { error: updateError } = await supabase
+                    .from('profiles')
+                    .update({ is_premium: false })
+                    .eq('stripe_customer_id', customerId);
+
+                if (updateError) {
+                    console.error('Failed to downgrade user:', updateError);
+                    // Webhookは200を返すが、ログにはエラーを残す
+                } else {
+                    console.log(`Successfully downgraded user with customer ID: ${customerId}`);
+                }
             }
         }
 
