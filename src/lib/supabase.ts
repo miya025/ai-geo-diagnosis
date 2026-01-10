@@ -191,11 +191,14 @@ export async function saveCachedResult(
     overallScore: number,
     detailScores: any,
     adviceData: any,
-    language: string = 'ja'
+    language: string = 'ja',
+    client?: SupabaseClient
 ): Promise<void> {
-    const adminClient = getSupabaseAdmin();
+    // If a client is provided (e.g., authenticated user client), use it.
+    // Otherwise, try to use the admin client.
+    const supabaseClient = client || getSupabaseAdmin();
 
-    const { error } = await adminClient
+    const { error } = await supabaseClient
         .from('analysis_results')
         .insert({
             url_hash: urlHash,

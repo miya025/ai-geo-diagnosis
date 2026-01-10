@@ -298,7 +298,8 @@ export const POST: APIRoute = async ({ request }) => {
           issues: result.issues,
           impression: result.impression,
         },
-        language as string
+        language as string,
+        authClient // 認証済みクライアントを渡す
       );
       console.log('Result cached successfully');
     } catch (cacheError) {
