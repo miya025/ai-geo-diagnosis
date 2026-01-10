@@ -164,6 +164,24 @@ export async function getCachedResult(urlHash: string, contentHash: string, lang
 /**
  * 診断結果をキャッシュに保存
  */
+const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_SERVICE_ROLE_KEY || '';
+
+/**
+ * Server-side only: Get Supabase Admin client (Service Role)
+ * Used to bypass RLS for background tasks like caching diagnosis results.
+ */
+function getSupabaseAdmin() {
+    if (!supabaseServiceRoleKey) {
+        console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to anonymous client.');
+        return supabase;
+    }
+    return createClient(supabaseUrl, supabaseServiceRoleKey);
+}
+
+/**
+ * 診断結果をキャッシュに保存
+ * Note: RLSを回避するため Service Role (Admin) クライアントを使用する
+ */
 export async function saveCachedResult(
     urlHash: string,
     contentHash: string,
@@ -172,7 +190,9 @@ export async function saveCachedResult(
     adviceData: any,
     language: string = 'ja'
 ): Promise<void> {
-    const { error } = await supabase
+    const adminClient = getSupabaseAdmin();
+
+    const { error } = await adminClient
         .from('analysis_results')
         .insert({
             url_hash: urlHash,

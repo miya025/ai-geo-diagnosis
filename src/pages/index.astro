@@ -623,6 +623,45 @@ import Layout from "../layouts/Layout.astro";
     const userEmailEl = document.getElementById("user-email");
     const creditBadge = document.getElementById("credit-badge");
 
+    // ユーザープロフィール取得
+    async function fetchUserProfile() {
+      if (!supabase || !currentUser) return;
+
+      try {
+        const {
+          data: { session },
+        } = await supabase.auth.getSession();
+        if (!session?.access_token) return;
+
+        const response = await fetch("/api/me", {
+          headers: {
+            Authorization: `Bearer ${session.access_token}`,
+          },
+        });
+
+        if (response.ok) {
+          const profile = await response.json();
+          const badge = document.getElementById("credit-badge");
+          if (badge) {
+            if (profile.is_premium) {
+              badge.textContent =
+                currentLang === "en" ? "Pro Plan" : "Proプラン (無制限)";
+              badge.className =
+                "inline-block text-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white px-2 py-0.5 rounded-full";
+            } else {
+              const prefix = currentLang === "en" ? "Credits: " : "残り: ";
+              const suffix = currentLang === "en" ? "" : "回";
+              badge.textContent = `${prefix}${profile.free_credits}${suffix}`;
+              badge.className =
+                "inline-block text-[10px] bg-indigo-100 text-indigo-700 px-2 py-0.5 rounded-full";
+            }
+          }
+        }
+      } catch (e) {
+        console.error("Failed to fetch profile", e);
+      }
+    }
+
     // 認証状態チェック
     async function checkAuth() {
       if (!supabase) return null;
@@ -633,6 +672,7 @@ import Layout from "../layouts/Layout.astro";
       updateHeaderUI();
       if (currentUser) {
         console.log("Logged in as:", currentUser.email);
+        fetchUserProfile();
       }
       return currentUser;
     }
@@ -643,6 +683,8 @@ import Layout from "../layouts/Layout.astro";
         headerLoginBtn?.classList.add("hidden");
         headerUserInfo?.classList.remove("hidden");
         if (userEmailEl) userEmailEl.textContent = currentUser.email || "";
+        // ログイン時は fetchUserProfile で非同期に更新されるため、ここでは初期値のままにしない
+        // ただし、ちらつき防止のために何もしないか、読み込み中を表示する
       } else {
         headerLoginBtn?.classList.remove("hidden");
         headerUserInfo?.classList.add("hidden");
@@ -704,6 +746,7 @@ import Layout from "../layouts/Layout.astro";
       supabase.auth.onAuthStateChange(async (event, session) => {
         currentUser = session?.user ?? null;
         updateHeaderUI();
+        if (currentUser) fetchUserProfile();
 
         if (event === "SIGNED_IN" && session?.user) {
           hideLoginModal();
@@ -727,7 +770,22 @@ import Layout from "../layouts/Layout.astro";
       "https://buy.stripe.com/test";
 
     // Proプランアップグレードハンドラー
+    // Proプランアップグレードハンドラー
     function handleUpgradeClick() {
+      // リンクが設定されていない場合（デフォルト値や空の場合）
+      if (
+        !stripePaymentLink ||
+        stripePaymentLink === "https://buy.stripe.com/test"
+      ) {
+        alert(
+          currentLang === "en"
+            ? "Payment link is not configured yet. Please contact support."
+            : "決済リンクがまだ設定されていません。管理者にお問い合わせください。",
+        );
+        console.error("PUBLIC_STRIPE_PAYMENT_LINK is not set in .env");
+        return;
+      }
+
       // ユーザーIDをクエリパラメータに追加（Webhookで識別用）
       const upgradeUrl = currentUser
         ? `${stripePaymentLink}?client_reference_id=${currentUser.id}`
