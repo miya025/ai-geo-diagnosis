@@ -242,21 +242,21 @@ const { title, description } = seoContent[initialLang];
                     class="transition-colors duration-300"
                     data-i18n="loading_step1"
                   >
-                    🖥️ コンテンツ取得中...
+                    コンテンツ取得中...
                   </p>
                   <p
                     id="loading-step-2"
                     class="opacity-50 transition-colors duration-300"
                     data-i18n="loading_step2"
                   >
-                    📸 視覚的分析中...
+                    視覚的分析中...
                   </p>
                   <p
                     id="loading-step-3"
                     class="opacity-50 transition-colors duration-300"
                     data-i18n="loading_step3"
                   >
-                    🤖 アルゴリズム評価中...
+                    アルゴリズム評価中...
                   </p>
                 </div>
               </div>
@@ -393,7 +393,6 @@ const { title, description } = seoContent[initialLang];
               class="mt-6 p-4 bg-indigo-50/50 border border-indigo-100 rounded-xl"
             >
               <p class="text-sm text-indigo-800 flex items-start gap-3">
-                <span class="flex-shrink-0 text-lg">💡</span>
                 <span>
                   <strong data-i18n="score_warning_title"
                     >このスコアはコンテンツ構造の最適度を測定しています。</strong
@@ -549,13 +548,14 @@ const { title, description } = seoContent[initialLang];
                 class="relative p-8 flex flex-col md:flex-row items-center justify-between gap-6"
               >
                 <div class="text-white">
-                  <h3 class="text-2xl font-bold mb-2 flex items-center gap-2">
-                    <span>🚀</span>
+                  <h3
+                    class="text-2xl font-bold mb-2 flex items-center gap-2 whitespace-nowrap"
+                  >
                     <span data-i18n="pro_card_title">Proプランで制限を解除</span
                     >
                   </h3>
                   <p
-                    class="text-indigo-100 opacity-90"
+                    class="text-indigo-100 opacity-90 whitespace-nowrap"
                     data-i18n="pro_card_subtitle"
                   >
                     AI検索最適化を加速させましょう
@@ -578,14 +578,13 @@ const { title, description } = seoContent[initialLang];
             <h2
               class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"
             >
-              <span class="bg-indigo-100 p-2 rounded-lg text-lg">📝</span>
               <span data-i18n="summary_title">総評</span>
             </h2>
             <p id="result-summary"></p>
           </div>
 
           <!-- Analysis Content Grid -->
-          <div class="grid md:grid-cols-2 gap-8">
+          <div class="flex flex-col gap-8">
             <!-- Strengths -->
             <div
               class="bg-white rounded-3xl shadow-xl p-8 border border-slate-100"
@@ -593,7 +592,6 @@ const { title, description } = seoContent[initialLang];
               <h2
                 class="text-xl font-bold text-emerald-800 mb-6 flex items-center gap-2"
               >
-                <span class="bg-emerald-100 p-2 rounded-lg">👍</span>
                 <span data-i18n="strengths_title">評価されるポイント</span>
               </h2>
               <ul id="result-strengths" class="space-y-4"></ul>
@@ -606,7 +604,6 @@ const { title, description } = seoContent[initialLang];
               <h2
                 class="text-xl font-bold text-amber-800 mb-6 flex items-center gap-2"
               >
-                <span class="bg-amber-100 p-2 rounded-lg">🤔</span>
                 <span data-i18n="issues_title">改善すべきポイント</span>
               </h2>
               <div id="result-issues" class="space-y-4"></div>
@@ -675,11 +672,6 @@ const { title, description } = seoContent[initialLang];
           <div
             class="bg-white p-8 rounded-3xl border border-slate-100 shadow-lg hover:shadow-xl transition-shadow"
           >
-            <div
-              class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl mb-4"
-            >
-              👁️
-            </div>
             <h3
               class="font-bold text-xl mb-3 text-slate-900"
               data-i18n="feat1_title"
@@ -693,11 +685,6 @@ const { title, description } = seoContent[initialLang];
           <div
             class="bg-white p-8 rounded-3xl border border-slate-100 shadow-lg hover:shadow-xl transition-shadow"
           >
-            <div
-              class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl mb-4"
-            >
-              ⚡
-            </div>
             <h3
               class="font-bold text-xl mb-3 text-slate-900"
               data-i18n="feat2_title"
@@ -711,11 +698,6 @@ const { title, description } = seoContent[initialLang];
           <div
             class="bg-white p-8 rounded-3xl border border-slate-100 shadow-lg hover:shadow-xl transition-shadow"
           >
-            <div
-              class="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-2xl mb-4"
-            >
-              📝
-            </div>
             <h3
               class="font-bold text-xl mb-3 text-slate-900"
               data-i18n="feat3_title"
