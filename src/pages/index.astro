@@ -19,9 +19,25 @@ if (ipCountry === "JP") {
   // Local dev or no IP header: use browser preference
   initialLang = "ja";
 }
+
+// SEO content by language
+const seoContent = {
+  ja: {
+    title: "GEO診断 - AI検索エンジン最適化チェッカー",
+    description:
+      "AIがあなたのWebサイトをAI検索エンジン（ChatGPT、Perplexity等）に引用されやすいかどうか診断。GEOスコアで可視化します。",
+  },
+  en: {
+    title: "GEO Diagnosis - AI Search Engine Optimization Checker",
+    description:
+      "Check if your website is optimized for AI Search Engines like ChatGPT and Perplexity. Visualize your GEO score.",
+  },
+};
+
+const { title, description } = seoContent[initialLang];
 ---
 
-<Layout title="GEO診断 - AI検索エンジン最適化チェッカー">
+<Layout title={title} description={description} lang={initialLang}>
   <main class="container mx-auto px-4 py-12 max-w-4xl">
     <!-- ヘッダー -->
     <header
