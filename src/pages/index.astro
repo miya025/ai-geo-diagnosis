@@ -992,6 +992,8 @@ if (ipCountry === "JP") {
         if (!supabase) return;
         await supabase.auth.signOut();
         currentUser = null;
+        userProfile = null;
+        updateBadgeUI();
         updateHeaderUI();
         window.location.reload();
       }
@@ -1009,15 +1011,24 @@ if (ipCountry === "JP") {
 
       // Googleログイン
       async function loginWithGoogle() {
-        if (!supabase) return;
-        const { error } = await supabase.auth.signInWithOAuth({
-          provider: "google",
-          options: {
-            redirectTo: window.location.href,
-          },
-        });
-        if (error) {
-          console.error("Login error:", error);
+        if (!supabase) {
+          alert("Supabase client not initialized");
+          return;
+        }
+        try {
+          const { error } = await supabase.auth.signInWithOAuth({
+            provider: "google",
+            options: {
+              redirectTo: window.location.origin,
+            },
+          });
+          if (error) {
+            console.error("Login error:", error);
+            alert("Login error: " + error.message);
+          }
+        } catch (e: any) {
+          console.error("Login exception:", e);
+          alert("Login exception: " + (e?.message || String(e)));
         }
       }
 
@@ -1040,6 +1051,12 @@ if (ipCountry === "JP") {
       if (supabase) {
         supabase.auth.onAuthStateChange(async (event, session) => {
           currentUser = session?.user ?? null;
+
+          if (event === "SIGNED_OUT") {
+            userProfile = null;
+            updateBadgeUI();
+          }
+
           updateHeaderUI();
           if (currentUser) fetchUserProfile();
 
