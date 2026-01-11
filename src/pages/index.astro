@@ -630,6 +630,7 @@ if (ipCountry === "JP") {
 
     <script>
       import { createClient, SupabaseClient } from "@supabase/supabase-js";
+      import DOMPurify from "dompurify";
 
       // Supabaseクライアント初期化（クライアントサイド）
       const supabaseUrl =
@@ -930,9 +931,12 @@ if (ipCountry === "JP") {
         }
       }
 
+      // ログアウト中フラグ（タイミング問題回避）
+      let isLoggingOut = false;
+
       // ユーザープロフィール取得
       async function fetchUserProfile() {
-        if (!supabase || !currentUser) return;
+        if (!supabase || !currentUser || isLoggingOut) return;
 
         try {
           const {
@@ -949,6 +953,9 @@ if (ipCountry === "JP") {
           if (response.ok) {
             userProfile = await response.json();
             updateBadgeUI();
+          } else if (response.status === 401) {
+            // ログアウト中やセッション無効時は静かに無視
+            console.log("Session invalid, skipping profile fetch");
           }
         } catch (e) {
           console.error("Failed to fetch profile", e);
@@ -990,6 +997,7 @@ if (ipCountry === "JP") {
       // ログアウト
       async function logout() {
         if (!supabase) return;
+        isLoggingOut = true;
         await supabase.auth.signOut();
         currentUser = null;
         userProfile = null;
@@ -1095,14 +1103,23 @@ if (ipCountry === "JP") {
         }
 
         try {
+          // 認証トークンを取得
+          let authHeaders: Record<string, string> = {
+            "Content-Type": "application/json",
+          };
+          if (supabase && currentUser) {
+            const {
+              data: { session },
+            } = await supabase.auth.getSession();
+            if (session?.access_token) {
+              authHeaders["Authorization"] = `Bearer ${session.access_token}`;
+            }
+          }
+
           const response = await fetch("/api/checkout", {
             method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-            },
+            headers: authHeaders,
             body: JSON.stringify({
-              userId: currentUser?.id,
-              email: currentUser?.email,
               language: currentLang,
             }),
           });
@@ -1404,12 +1421,14 @@ if (ipCountry === "JP") {
         const t = (translations as any)[currentLang];
 
         if (data.strengths.length > 0) {
-          strengthsEl.innerHTML = data.strengths
-            .map(
-              (s) =>
-                `<li class="flex items-start gap-2"><span class="text-emerald-600">✓</span><span>${s}</span></li>`,
-            )
-            .join("");
+          strengthsEl.innerHTML = DOMPurify.sanitize(
+            data.strengths
+              .map(
+                (s) =>
+                  `<li class="flex items-start gap-2"><span class="text-emerald-600">✓</span><span>${DOMPurify.sanitize(s)}</span></li>`,
+              )
+              .join(""),
+          );
         } else {
           strengthsEl.innerHTML = `<li class="text-slate-500 italic">${t.no_strengths_found}</li>`;
         }
@@ -1521,17 +1540,19 @@ if (ipCountry === "JP") {
           issuesHtml += dummyLockedHtml;
         }
 
-        issuesEl.innerHTML = issuesHtml;
+        issuesEl.innerHTML = DOMPurify.sanitize(issuesHtml);
 
         // AI検索プレビュー
         const impressionEl = document.getElementById(
           "result-impression",
         ) as HTMLDivElement;
         // 簡易Markdownパーサー: **bold** を <strong>bold</strong> に変換
-        const formattedImpression = data.impression
+        // DOMPurifyでサニタイズ後にMarkdown変換
+        const sanitizedImpression = DOMPurify.sanitize(data.impression);
+        const formattedImpression = sanitizedImpression
           .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>") // Bold
           .replace(/\n/g, "<br />"); // Newlines
-        impressionEl.innerHTML = formattedImpression;
+        impressionEl.innerHTML = DOMPurify.sanitize(formattedImpression);
 
         // 残りクレジット数の更新（無料ユーザーのみ）
         const remainingCredits = document.getElementById(

@@ -117,31 +117,22 @@ export async function consumeCredit(userId: string, client?: SupabaseClient): Pr
 
 // ======== キャッシュ関連 ========
 
+import { createHash } from 'crypto';
+
 /**
- * URLハッシュを生成
+ * URLハッシュを生成（SHA-256）
+ * キャッシュキーとして使用するため、セキュアなハッシュ関数を使用
  */
 export function generateUrlHash(url: string): string {
-    // 簡易ハッシュ（本番ではSHA-256を使う）
-    let hash = 0;
-    for (let i = 0; i < url.length; i++) {
-        const char = url.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
+    return createHash('sha256').update(url).digest('hex');
 }
 
 /**
- * コンテンツハッシュを生成
+ * コンテンツハッシュを生成（SHA-256）
+ * コンテンツの変更検出に使用
  */
 export function generateContentHash(content: string): string {
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-        const char = content.charCodeAt(i);
-        hash = ((hash << 5) - hash) + char;
-        hash = hash & hash;
-    }
-    return Math.abs(hash).toString(16);
+    return createHash('sha256').update(content).digest('hex');
 }
 
 /**

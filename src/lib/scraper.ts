@@ -1,6 +1,140 @@
 import * as cheerio from 'cheerio';
 import puppeteer from 'puppeteer-core';
 import chromium from '@sparticuz/chromium';
+import dns from 'dns/promises';
+
+// ========================================
+// SSRF対策: URLバリデーション
+// ========================================
+
+// プライベートIPレンジの正規表現パターン
+const PRIVATE_IP_PATTERNS = [
+  /^10\./,                          // 10.0.0.0/8
+  /^172\.(1[6-9]|2[0-9]|3[01])\./,  // 172.16.0.0/12
+  /^192\.168\./,                    // 192.168.0.0/16
+  /^169\.254\./,                    // Link-local (AWS metadata等)
+  /^127\./,                         // Loopback
+  /^0\./,                           // 0.0.0.0/8
+  /^100\.(6[4-9]|[7-9][0-9]|1[0-2][0-7])\./,  // Carrier-grade NAT
+  /^198\.1[89]\./,                  // Benchmark testing
+  /^::1$/,                          // IPv6 loopback
+  /^fc/i,                           // IPv6 private
+  /^fd/i,                           // IPv6 private
+  /^fe80:/i,                        // IPv6 link-local
+];
+
+// 禁止ホスト名
+const BLOCKED_HOSTNAMES = [
+  'localhost',
+  '127.0.0.1',
+  '::1',
+  '0.0.0.0',
+  'metadata.google.internal',       // GCP metadata
+  'metadata.google.cloud',
+];
+
+// 禁止ドメインパターン（AWSメタデータなど）
+const BLOCKED_DOMAIN_PATTERNS = [
+  /^169\.254\.169\.254$/,           // AWS/GCP/Azure metadata
+  /^metadata\./i,
+  /\.internal$/i,
+  /\.local$/i,
+];
+
+/**
+ * IPアドレスがプライベートレンジかどうかを検証
+ */
+function isPrivateIP(ip: string): boolean {
+  return PRIVATE_IP_PATTERNS.some(pattern => pattern.test(ip));
+}
+
+/**
+ * ホスト名が禁止リストに含まれているかを検証
+ */
+function isBlockedHostname(hostname: string): boolean {
+  const lowerHostname = hostname.toLowerCase();
+
+  // 完全一致チェック
+  if (BLOCKED_HOSTNAMES.includes(lowerHostname)) {
+    return true;
+  }
+
+  // パターンマッチチェック
+  if (BLOCKED_DOMAIN_PATTERNS.some(pattern => pattern.test(lowerHostname))) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * URLのセキュリティ検証（SSRF対策）
+ * @throws Error 安全でないURLの場合
+ */
+async function validateUrlSecurity(url: string): Promise<void> {
+  let parsed: URL;
+
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('無効なURL形式です');
+  }
+
+  // 1. プロトコル検証
+  if (!['http:', 'https:'].includes(parsed.protocol)) {
+    throw new Error('HTTP/HTTPSプロトコルのみ許可されています');
+  }
+
+  // 2. ホスト名検証
+  const hostname = parsed.hostname;
+
+  if (!hostname) {
+    throw new Error('ホスト名が指定されていません');
+  }
+
+  if (isBlockedHostname(hostname)) {
+    throw new Error('このホストへのアクセスは許可されていません');
+  }
+
+  // 3. IPアドレス形式の場合はプライベートIP検証
+  if (isPrivateIP(hostname)) {
+    throw new Error('プライベートIPアドレスへのアクセスは許可されていません');
+  }
+
+  // 4. DNS解決してIPアドレスを検証（DNS rebinding対策）
+  try {
+    // IPv4アドレスを取得
+    const addresses = await dns.resolve4(hostname).catch(() => []);
+
+    for (const addr of addresses) {
+      if (isPrivateIP(addr)) {
+        throw new Error('このドメインが解決するIPアドレスへのアクセスは許可されていません');
+      }
+    }
+
+    // IPv6アドレスも検証
+    const ipv6Addresses = await dns.resolve6(hostname).catch(() => []);
+
+    for (const addr of ipv6Addresses) {
+      if (isPrivateIP(addr)) {
+        throw new Error('このドメインが解決するIPアドレスへのアクセスは許可されていません');
+      }
+    }
+  } catch (dnsError) {
+    // DNS解決エラーの場合は処理を続行（Puppeteerがエラーを処理する）
+    if (dnsError instanceof Error && dnsError.message.includes('許可されていません')) {
+      throw dnsError;
+    }
+    // その他のDNSエラーは無視（ホスト名が存在しない場合など）
+  }
+
+  // 5. ポート検証（標準ポート以外を制限する場合）
+  const port = parsed.port;
+  if (port && !['80', '443', '8080', '8443', '3000', '5000'].includes(port)) {
+    console.warn(`Non-standard port detected: ${port}`);
+    // 非標準ポートは警告のみ（必要に応じてブロック）
+  }
+}
 
 // Vercelサーバーレス環境かどうかを判定
 const isVercel = process.env.VERCEL === '1' || process.env.AWS_LAMBDA_FUNCTION_NAME;
@@ -45,6 +179,9 @@ export interface StructuredLP {
 }
 
 export async function scrapeUrl(url: string): Promise<StructuredLP> {
+  // SSRF対策: URLのセキュリティ検証
+  await validateUrlSecurity(url);
+
   // Vercel環境用のブラウザ設定
   const browserOptions = isVercel
     ? {

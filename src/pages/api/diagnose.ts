@@ -183,7 +183,7 @@ export const POST: APIRoute = async ({ request }) => {
       }
     }
 
-    console.log(`Auth check: isPremium=${isPremium}, freeCredits=${freeCredits}, userId=${userId || 'anonymous'}`);
+    console.log(`Auth check: isPremium=${isPremium}, freeCredits=${freeCredits}, hasUser=${!!userId}`);
 
     // 【修正】ログイン必須化
     // 仕様書通り、未ログインでの診断は許可しない
@@ -354,8 +354,9 @@ export const POST: APIRoute = async ({ request }) => {
       headers: { 'Content-Type': 'application/json' },
     });
   } catch (error) {
-    console.error('Diagnosis error:', error);
-    return new Response(JSON.stringify({ error: `診断中にエラーが発生しました: ${error instanceof Error ? error.message : 'Unknown error'}` }), {
+    // エラー詳細はサーバーログにのみ記録（クライアントには露出しない）
+    console.error('Diagnosis error:', error instanceof Error ? error.message : 'Unknown error');
+    return new Response(JSON.stringify({ error: '診断中にエラーが発生しました。しばらく時間をおいてから再度お試しください。' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });
