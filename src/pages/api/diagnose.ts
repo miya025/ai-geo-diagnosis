@@ -10,13 +10,15 @@ import {
 import {
   supabase,
   getProfile,
-  checkAndResetCredits,
-  consumeCredit,
   generateUrlHash,
   generateContentHash,
   getCachedResult,
+} from '../../lib/supabase-client';
+import {
+  checkAndResetCredits,
+  consumeCredit,
   saveCachedResult,
-} from '../../lib/supabase';
+} from '../../lib/supabase-admin';
 
 export const prerender = false;
 
@@ -85,7 +87,7 @@ async function callClaudedWithVision(
       const errorJson = JSON.parse(errorText);
       throw new Error(errorJson.error?.message || 'Claude API呼び出しに失敗しました');
     } catch {
-      throw new Error('Claude API呼び出しに失敗しました');
+      throw new Error('Claude API呼び出しに失敗しました / Claude API call failed');
     }
   }
 
@@ -101,7 +103,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // URLバリデーション
     if (!url || typeof url !== 'string') {
-      return new Response(JSON.stringify({ error: 'URLを入力してください' }), {
+      return new Response(JSON.stringify({ error: language === 'en' ? 'Please enter a URL' : 'URLを入力してください' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -113,7 +115,7 @@ export const POST: APIRoute = async ({ request }) => {
         throw new Error('Invalid protocol');
       }
     } catch {
-      return new Response(JSON.stringify({ error: '有効なURLを入力してください' }), {
+      return new Response(JSON.stringify({ error: language === 'en' ? 'Please enter a valid URL' : '有効なURLを入力してください' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -122,7 +124,7 @@ export const POST: APIRoute = async ({ request }) => {
     // APIキー確認
     const apiKey = import.meta.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
-      return new Response(JSON.stringify({ error: 'API設定エラー' }), {
+      return new Response(JSON.stringify({ error: language === 'en' ? 'API configuration error' : 'API設定エラー' }), {
         status: 500,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -159,8 +161,8 @@ export const POST: APIRoute = async ({ request }) => {
       if (!authError && user) {
         userId = user.id;
 
-        // authClientを渡す
-        const profile = await checkAndResetCredits(user.id, authClient);
+        // authClientを渡す必要はなくなった（Adminで実行）
+        const profile = await checkAndResetCredits(user.id);
 
         if (profile) {
           isPremium = profile.is_premium;
@@ -169,8 +171,11 @@ export const POST: APIRoute = async ({ request }) => {
           // 無料ユーザーのクレジット確認
           if (!isPremium) {
             if (freeCredits <= 0) {
+              const msg = language === 'en'
+                ? 'You have used up your monthly free credits (3). Upgrade to Pro for unlimited diagnosis.'
+                : '今月の無料診断回数（3回）を使い切りました。Proプランにアップグレードすると無制限に診断できます。';
               return new Response(JSON.stringify({
-                error: '今月の無料診断回数（3回）を使い切りました。Proプランにアップグレードすると無制限に診断できます。',
+                error: msg,
                 credits_exhausted: true,
                 free_credits: 0
               }), {
@@ -188,7 +193,7 @@ export const POST: APIRoute = async ({ request }) => {
     // 【修正】ログイン必須化
     // 仕様書通り、未ログインでの診断は許可しない
     if (!userId) {
-      return new Response(JSON.stringify({ error: '診断を実行するにはログインが必要です。' }), {
+      return new Response(JSON.stringify({ error: language === 'en' ? 'Login is required to perform diagnosis.' : '診断を実行するにはログインが必要です。' }), {
         status: 401,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -201,7 +206,7 @@ export const POST: APIRoute = async ({ request }) => {
       lp = await scrapeUrl(url);
     } catch (error) {
       console.error('Scraping error:', error);
-      return new Response(JSON.stringify({ error: 'ページの取得に失敗しました。URLを確認してください。またはサーバー負荷が高い可能性があります。' }), {
+      return new Response(JSON.stringify({ error: language === 'en' ? 'Failed to fetch the page. Please check the URL or server load.' : 'ページの取得に失敗しました。URLを確認してください。またはサーバー負荷が高い可能性があります。' }), {
         status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
@@ -305,8 +310,7 @@ export const POST: APIRoute = async ({ request }) => {
           impression: result.impression,
         },
         language as string,
-        currentModel,
-        authClient
+        currentModel
       );
       console.log('Result cached successfully');
     } catch (cacheError) {
@@ -316,7 +320,7 @@ export const POST: APIRoute = async ({ request }) => {
     // Step 5: クレジット消費（無料ユーザーのみ、キャッシュヒット時は消費しない）
     let newFreeCredits = freeCredits;
     if (userId && !isPremium) {
-      const consumed = await consumeCredit(userId, authClient);
+      const consumed = await consumeCredit(userId);
       if (consumed) {
         newFreeCredits = freeCredits - 1;
         console.log(`Credit consumed. Remaining: ${newFreeCredits}`);
@@ -356,7 +360,9 @@ export const POST: APIRoute = async ({ request }) => {
   } catch (error) {
     // エラー詳細はサーバーログにのみ記録（クライアントには露出しない）
     console.error('Diagnosis error:', error instanceof Error ? error.message : 'Unknown error');
-    return new Response(JSON.stringify({ error: '診断中にエラーが発生しました。しばらく時間をおいてから再度お試しください。' }), {
+    // リクエストボディから言語を取得できない場合のフォールバックは日本語
+    // (bodyのパース自体が失敗した場合など)
+    return new Response(JSON.stringify({ error: '診断中にエラーが発生しました。/ An error occurred.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' },
     });

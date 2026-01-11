@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { createClient } from '@supabase/supabase-js';
-import { checkAndResetCredits } from '../../lib/supabase';
+import { checkAndResetCredits, getSupabaseAdmin } from '../../lib/supabase-admin';
 
 export const prerender = false;
 
@@ -41,14 +41,16 @@ export const GET: APIRoute = async ({ request }) => {
         }
 
         // プロフィール取得（30日リセットチェック込み）
-        // authClientを渡してRLSを通過させる
-        let profile = await checkAndResetCredits(user.id, authClient);
+        // Admin権限でチェック・リセット
+        let profile = await checkAndResetCredits(user.id);
 
         // プロフィールが存在しない場合（トリガー不整合などで作成されなかった場合）
         // デフォルト値で新規作成して返す
         if (!profile) {
             console.warn(`Profile missing for user ${user.id}. Creating default profile.`);
-            const { data: newProfile, error: createError } = await authClient
+            // Admin権限で作成（ユーザー権限ではINSERT不可のため）
+            const admin = getSupabaseAdmin();
+            const { data: newProfile, error: createError } = await admin
                 .from('profiles')
                 .insert({
                     id: user.id,

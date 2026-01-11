@@ -12,12 +12,13 @@ export default defineConfig({
   integrations: [sitemap()],
   vite: {
     plugins: [tailwindcss()],
-    envPrefix: ['VITE_', 'PUBLIC_', 'SUPABASE_'],
+    envPrefix: ['VITE_', 'PUBLIC_'],
     server: {
       fs: {
         strict: false
       }
     }
   }
+}
 });
 

@@ -23,12 +23,12 @@ if (ipCountry === "JP") {
 // SEO content by language
 const seoContent = {
   ja: {
-    title: "GEO診断 - AI検索エンジン最適化チェッカー",
+    title: "AI GEO診断 - AI検索エンジン最適化チェッカー",
     description:
       "AIがあなたのWebサイトをAI検索エンジン（ChatGPT、Perplexity等）に引用されやすいかどうか診断。GEOスコアで可視化します。",
   },
   en: {
-    title: "GEO Diagnosis - AI Search Engine Optimization Checker",
+    title: "AI GEO Diagnosis - AI Search Engine Optimization Checker",
     description:
       "Check if your website is optimized for AI Search Engines like ChatGPT and Perplexity. Visualize your GEO score.",
   },
@@ -93,7 +93,7 @@ const { title, description } = seoContent[initialLang];
         data-i18n="title"
         class="text-4xl md:text-5xl font-bold text-slate-900 mb-4"
       >
-        GEO診断
+        AI GEO診断
       </h1>
       <p
         data-i18n="description"
@@ -578,7 +578,7 @@ const { title, description } = seoContent[initialLang];
 
       <!-- フッター -->
       <footer class="mt-16 text-center text-slate-500 text-sm">
-        <p>&copy; 2026 GEO診断 (Vision Enhanced)</p>
+        <p>&copy; 2026 AI GEO診断 (Vision Enhanced)</p>
       </footer>
     </section>
 
@@ -718,7 +718,7 @@ const { title, description } = seoContent[initialLang];
         "ja") as "ja" | "en";
       const translations = {
         ja: {
-          title: "GEO診断",
+          title: "AI GEO診断",
           description: `AI検索エンジンに<span class="text-indigo-600 font-semibold">「引用されるコンテンツ」</span>かどうかを診断します`,
           label_url: "診断したいURLを入力",
           btn_diagnose: "GEO診断を開始する",
@@ -792,7 +792,7 @@ const { title, description } = seoContent[initialLang];
           cancel_anytime: "いつでもキャンセル可能",
         },
         en: {
-          title: "GEO Diagnosis",
+          title: "AI GEO Diagnosis",
           description: `Check if your content is cited by <span class="text-indigo-600 font-semibold">AI Search Engines</span>`,
           label_url: "Enter URL to analyze",
           btn_diagnose: "Start Diagnosis",
@@ -1314,7 +1314,12 @@ const { title, description } = seoContent[initialLang];
               // イベントリスナーはdocumentレベルの委譲で処理されるため再設定不要
               return;
             }
-            throw new Error(data.error || "診断に失敗しました");
+            throw new Error(
+              data.error ||
+                (currentLang === "en"
+                  ? "Diagnosis failed"
+                  : "診断に失敗しました"),
+            );
           }
 
           displayResult(data);
@@ -1325,7 +1330,11 @@ const { title, description } = seoContent[initialLang];
           }
 
           error.textContent =
-            err instanceof Error ? err.message : "診断中にエラーが発生しました";
+            err instanceof Error
+              ? err.message
+              : currentLang === "en"
+                ? "An error occurred during diagnosis"
+                : "診断中にエラーが発生しました";
           error.classList.remove("hidden");
         } finally {
           submitBtn.disabled = false;

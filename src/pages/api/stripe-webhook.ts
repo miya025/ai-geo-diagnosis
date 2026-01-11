@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { getSupabaseAdmin } from '../../lib/supabase';
+import { getSupabaseAdmin } from '../../lib/supabase-admin';
 import Stripe from 'stripe';
 
 export const prerender = false;
