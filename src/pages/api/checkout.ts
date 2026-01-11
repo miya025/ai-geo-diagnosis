@@ -17,10 +17,15 @@ export const POST: APIRoute = async ({ request, url }) => {
     // Get user ID and language from request body
     let userId;
     let language;
+    let email: string | undefined;
     try {
         const body = await request.json();
         userId = body.userId;
         language = body.language;
+        // emailをリクエストから取得
+        if (body.email) {
+            email = body.email;
+        }
     } catch (e) {
         // If not JSON or empty.
     }
@@ -71,6 +76,7 @@ export const POST: APIRoute = async ({ request, url }) => {
             success_url: `${origin}/?success=true`,
             cancel_url: `${origin}/`,
             client_reference_id: userId,
+            customer_email: email,
         });
 
         return new Response(JSON.stringify({ url: session.url }), {

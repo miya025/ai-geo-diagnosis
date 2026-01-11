@@ -29,6 +29,7 @@ export interface AnalysisResult {
         credibility: number;
     };
     advice_data: any;
+    model?: string;
     created_at: string;
 }
 
@@ -145,17 +146,35 @@ export function generateContentHash(content: string): string {
 
 /**
  * キャッシュから診断結果を取得
+ * ProユーザーはProモデルのキャッシュのみ、FreeユーザーはどれでもOK（ただし古いモデル優先でよいが、
+ * ここでは単純化のため「指定されたモデルと一致するもの」または「Freeユーザーなら何でもいいが...」
+ * 要件: "Proプランに変更したあと、もう一度同じURLで診断されてもキャッシュ使っちゃだめ"
+ * -> Proユーザーのリクエスト時は、Proモデル(model='sonnet...')のキャッシュのみをヒットさせる。
+ * -> Freeユーザーのリクエスト時は、Freeモデル(model='haiku...')のキャッシュのみをヒットさせる（あるいはProの結果を見せてもいいが、コスト削減ならFreeキャッシュ優先）。
+ * したがって、引数で `requiredModel` を受け取り、それに一致するものを探すのが確実。
  */
-export async function getCachedResult(urlHash: string, contentHash: string, language: string = 'ja'): Promise<AnalysisResult | null> {
-    const { data, error } = await supabase
+export async function getCachedResult(
+    urlHash: string,
+    contentHash: string,
+    language: string = 'ja',
+    requiredModel?: string
+): Promise<AnalysisResult | null> {
+    let query = supabase
         .from('analysis_results')
         .select('*')
         .eq('url_hash', urlHash)
         .eq('content_hash', contentHash)
-        .eq('language', language)
+        .eq('language', language);
+
+    // モデル指定がある場合（Proユーザーは必ず指定される想定）
+    if (requiredModel) {
+        query = query.eq('model', requiredModel);
+    }
+
+    const { data, error } = await query
         .order('created_at', { ascending: false })
         .limit(1)
-        .single();
+        .maybeSingle();
 
     if (error) {
         // キャッシュが見つからない場合はnullを返す
@@ -192,6 +211,7 @@ export async function saveCachedResult(
     detailScores: any,
     adviceData: any,
     language: string = 'ja',
+    model: string,
     client?: SupabaseClient
 ): Promise<void> {
     // If a client is provided (e.g., authenticated user client), use it.
@@ -206,7 +226,8 @@ export async function saveCachedResult(
             overall_score: overallScore,
             detail_scores: detailScores,
             advice_data: adviceData,
-            language: language
+            language: language,
+            model: model
         });
 
     if (error) {

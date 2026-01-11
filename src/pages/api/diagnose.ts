@@ -212,7 +212,12 @@ export const POST: APIRoute = async ({ request }) => {
     const contentHash = generateContentHash(lp.bodyText || '');
     console.log('Checking cache:', { urlHash, contentHash });
 
-    const cachedResult = await getCachedResult(urlHash, contentHash, language as string);
+    // キャッシュ取得条件
+    // Proユーザー: Proモデルのキャッシュのみ許可（Free時代のキャッシュは使わない）
+    // Freeユーザー: モデル不問（Proのキャッシュがあればラッキー、なければFree）
+    const requiredModel = isPremium ? AI_MODELS.pro : undefined;
+
+    const cachedResult = await getCachedResult(urlHash, contentHash, language as string, requiredModel);
     if (cachedResult) {
       console.log('Cache hit! Returning cached result (no credit consumed)');
       return new Response(JSON.stringify({
@@ -238,6 +243,7 @@ export const POST: APIRoute = async ({ request }) => {
 
     // Vision API呼び出し (スクリーンショットがある場合のみ送信)
     // Free: Haiku / Pro: Sonnet で切替
+    const currentModel = isPremium ? AI_MODELS.pro : AI_MODELS.free;
     const geoResult = await callClaudedWithVision(apiKey, geoPrompt, systemPrompt, lp.screenshot, isPremium);
     console.log('--- AI RAW RESPONSE ---\n', geoResult.slice(0, 500) + '...', '\n-----------------------');
 
@@ -299,7 +305,8 @@ export const POST: APIRoute = async ({ request }) => {
           impression: result.impression,
         },
         language as string,
-        authClient // 認証済みクライアントを渡す
+        currentModel,
+        authClient
       );
       console.log('Result cached successfully');
     } catch (cacheError) {
