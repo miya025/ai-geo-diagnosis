@@ -1,0 +1,97 @@
+---
+
+---
+
+<nav
+    class="fixed top-6 left-1/2 -translate-x-1/2 z-50 w-[90%] max-w-4xl bg-white/80 backdrop-blur-md border border-white/40 shadow-xl rounded-full px-6 py-3 flex items-center justify-between transition-all duration-300 hover:shadow-2xl"
+>
+    <!-- Logo -->
+    <a href="/" class="flex items-center gap-2 group">
+        <div
+            class="w-8 h-8 rounded-full bg-linear-to-br from-indigo-500 to-blue-600 flex items-center justify-center text-white font-bold text-lg shadow-md group-hover:scale-105 transition-transform"
+        >
+            G
+        </div>
+        <span
+            class="font-bold text-slate-800 text-lg tracking-tight group-hover:text-indigo-600 transition-colors"
+        >
+            AI GEO Diagnosis
+        </span>
+    </a>
+
+    <!-- Right Side Actions -->
+    <div class="flex items-center gap-3 md:gap-4">
+        <!-- Language Switcher -->
+        <div
+            class="hidden md:flex bg-slate-100/80 rounded-full p-1 border border-slate-200/50"
+        >
+            <button
+                id="lang-btn-ja"
+                class="px-3 py-1 rounded-full text-xs font-bold text-indigo-600 bg-white shadow-sm transition-all hover:opacity-80 disabled:opacity-50"
+            >
+                JP
+            </button>
+            <button
+                id="lang-btn-en"
+                class="px-3 py-1 rounded-full text-xs font-medium text-slate-500 hover:text-indigo-600 transition-all hover:opacity-80 disabled:opacity-50"
+            >
+                EN
+            </button>
+        </div>
+
+        <!-- Auth Section -->
+        <div class="flex items-center">
+            <!-- Login Button -->
+            <button
+                id="header-login-btn"
+                class="hidden text-sm font-semibold text-white bg-linear-to-r from-indigo-600 to-blue-600 px-5 py-2 rounded-full shadow-lg shadow-indigo-500/30 hover:shadow-indigo-500/50 hover:scale-105 transition-all cursor-pointer"
+                data-i18n="login_suggest"
+            >
+                ログイン
+            </button>
+
+            <!-- User Info (Logged In) -->
+            <div id="header-user-info" class="hidden items-center gap-3">
+                <div class="text-right hidden sm:block">
+                    <p
+                        id="user-email"
+                        class="text-xs text-slate-500 font-medium"
+                    >
+                    </p>
+                    <span
+                        id="credit-badge"
+                        class="inline-block text-[10px] bg-indigo-50 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-100"
+                    >
+                        残り: -回
+                    </span>
+                </div>
+                <button
+                    id="header-logout-btn"
+                    class="text-xs text-slate-400 hover:text-red-500 font-medium transition-colors px-2 py-1"
+                    data-i18n="logout"
+                >
+                    ログアウト
+                </button>
+            </div>
+        </div>
+    </div>
+</nav>
+
+<!-- Language Switcher Mobile (Floating Bottom Right or accessible via menu? For now simplified to just desktop or hidden on very small screens, but users requested mobile fix previously. I'll make the main switcher visible on mobile or handle it better.) -->
+<!-- Re-adding a small mobile lang switcher if needed, but for now I kept the MD hidden class on the main one. Let's make it visible on all screens but smaller padding. -->
+<style>
+    /* Optional: Add custom animations or overrides */
+    nav {
+        animation: slideDown 0.5s ease-out;
+    }
+    @keyframes slideDown {
+        from {
+            transform: translate(-50%, -100%);
+            opacity: 0;
+        }
+        to {
+            transform: translate(-50%, 0);
+            opacity: 1;
+        }
+    }
+</style>
