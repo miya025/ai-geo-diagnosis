@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { supabase } from '../../lib/supabase';
+import { getSupabaseAdmin } from '../../lib/supabase';
 import Stripe from 'stripe';
 
 export const prerender = false;
@@ -39,6 +39,8 @@ export const POST: APIRoute = async ({ request }) => {
         typescript: true,
     });
 
+    const supabaseAdmin = getSupabaseAdmin();
+
     try {
         const body = await request.text();
         let event: Stripe.Event;
@@ -77,7 +79,7 @@ export const POST: APIRoute = async ({ request }) => {
                 console.log(`Upgrading user ${userId} to Premium`);
 
                 // profiles.is_premium を true に更新し、stripe_customer_id も保存
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseAdmin
                     .from('profiles')
                     .update({
                         is_premium: true,
@@ -107,7 +109,7 @@ export const POST: APIRoute = async ({ request }) => {
                 console.log(`Processing subscription deletion for customer: ${customerId}`);
 
                 // stripe_customer_id に一致するユーザーの is_premium を false に更新
-                const { error: updateError } = await supabase
+                const { error: updateError } = await supabaseAdmin
                     .from('profiles')
                     .update({ is_premium: false })
                     .eq('stripe_customer_id', customerId);

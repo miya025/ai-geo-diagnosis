@@ -173,7 +173,7 @@ const supabaseServiceRoleKey = import.meta.env.SUPABASE_SERVICE_ROLE_KEY || proc
  * Server-side only: Get Supabase Admin client (Service Role)
  * Used to bypass RLS for background tasks like caching diagnosis results.
  */
-function getSupabaseAdmin() {
+export function getSupabaseAdmin() {
     if (!supabaseServiceRoleKey) {
         console.warn('SUPABASE_SERVICE_ROLE_KEY is missing. Falling back to anonymous client.');
         return supabase;
