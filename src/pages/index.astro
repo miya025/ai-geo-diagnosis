@@ -998,12 +998,30 @@ if (ipCountry === "JP") {
       async function logout() {
         if (!supabase) return;
         isLoggingOut = true;
-        await supabase.auth.signOut();
+
+        try {
+          // グローバルスコープでサインアウト（すべてのセッションを無効化）
+          const { error } = await supabase.auth.signOut({ scope: "global" });
+          if (error) {
+            console.error("Sign out error:", error);
+          }
+        } catch (e) {
+          console.error("Sign out exception:", e);
+        }
+
+        // ローカルストレージのSupabaseセッションデータを手動クリア
+        const storageKey = `sb-${new URL(supabaseUrl).hostname.split(".")[0]}-auth-token`;
+        localStorage.removeItem(storageKey);
+
         currentUser = null;
         userProfile = null;
         updateBadgeUI();
         updateHeaderUI();
-        window.location.reload();
+
+        // 少し待ってからリロード（セッションクリアを確実にする）
+        setTimeout(() => {
+          window.location.reload();
+        }, 100);
       }
 
       // モーダル表示/非表示
