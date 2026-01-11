@@ -569,6 +569,19 @@ const { title, description } = seoContent[initialLang];
             </div>
           </div>
 
+          <!-- 総評 -->
+          <div
+            class="bg-indigo-50/50 border border-indigo-100 rounded-3xl p-8 text-slate-700 leading-relaxed font-medium"
+          >
+            <h2
+              class="text-xl font-bold text-slate-900 mb-4 flex items-center gap-2"
+            >
+              <span class="bg-indigo-100 p-2 rounded-lg text-lg">📝</span>
+              <span data-i18n="summary_title">総評</span>
+            </h2>
+            <p id="result-summary"></p>
+          </div>
+
           <!-- Analysis Content Grid -->
           <div class="grid md:grid-cols-2 gap-8">
             <!-- Strengths -->
@@ -638,6 +651,18 @@ const { title, description } = seoContent[initialLang];
             >
               別のURLを診断する
             </button>
+            <div
+              id="remaining-credits"
+              class="mt-4 text-sm text-slate-500 hidden"
+            >
+              <span data-i18n="credits_remain_prefix"
+                >今月の残り診断回数:
+              </span>
+              <span
+                id="remaining-credits-count"
+                class="font-bold text-slate-800"></span>
+              <span data-i18n="credits_remain_suffix">回</span>
+            </div>
           </div>
         </section>
       </div>
