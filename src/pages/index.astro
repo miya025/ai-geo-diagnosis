@@ -64,7 +64,7 @@ const { title, description } = seoContent[initialLang];
         <!-- Right Actions -->
         <div class="flex items-center gap-4">
           <!-- 言語切り替え -->
-          <div class="hidden md:flex bg-slate-100 p-1 rounded-lg shadow-inner">
+          <div class="flex bg-slate-100 p-1 rounded-lg shadow-inner">
             <button
               id="lang-btn-ja"
               class="px-3 py-1.5 rounded-md text-xs font-bold bg-white text-indigo-600 shadow-sm transition-all pointer-events-auto z-10"
@@ -538,7 +538,6 @@ const { title, description } = seoContent[initialLang];
             <div
               id="pro-upgrade-banner"
               class="hidden mt-8 rounded-2xl overflow-hidden relative group cursor-pointer"
-              onclick="document.getElementById('upgrade-btn').click()"
             >
               <div
                 class="absolute inset-0 bg-gradient-to-r from-violet-600 to-indigo-600 transition-all duration-300 group-hover:scale-105"
@@ -1358,6 +1357,22 @@ const { title, description } = seoContent[initialLang];
         handleUpgradeClick(upgradeBtn as HTMLButtonElement);
       }
     });
+
+    // Proプランバナーの背景クリックハンドリング
+    document
+      .getElementById("pro-upgrade-banner")
+      ?.addEventListener("click", (e) => {
+        const target = e.target as HTMLElement;
+        const btn = document.getElementById("upgrade-btn");
+        // ボタンそのものや内部のクリックでない場合のみ発火（無限ループ防止）
+        if (
+          btn &&
+          !target.closest("#upgrade-btn") &&
+          !target.closest(".js-pro-upgrade-btn")
+        ) {
+          btn.click();
+        }
+      });
 
     form.addEventListener("submit", async (e) => {
       e.preventDefault();
