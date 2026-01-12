@@ -33,8 +33,8 @@ interface GeminiPart {
 
 // AIモデル定義（Free = Flash / Pro = Pro）
 const AI_MODELS = {
-  free: 'gemini-3-flash',    // Gemini 3 Flash
-  pro: 'gemini-3-pro',       // Gemini 3 Pro
+  free: 'gemini-3-flash-preview',    // Gemini 3 Flash
+  pro: 'gemini-3-pro-preview',       // Gemini 3 Pro
 } as const;
 
 async function callGeminiWithVision(
