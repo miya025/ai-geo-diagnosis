@@ -31,7 +31,7 @@ npm install
 
 # 環境変数の設定
 cp .env.example .env
-# .env に ANTHROPIC_API_KEY を設定
+# .env に GEMINI_API_KEY を設定
 
 # 開発サーバー起動
 npm run dev
@@ -41,13 +41,13 @@ npm run dev
 
 | 変数名 | 説明 |
 |--------|------|
-| `ANTHROPIC_API_KEY` | Anthropic API キー |
+| `GEMINI_API_KEY` | Google Gemini API キー |
 
 ## 技術スタック
 
 - **フロントエンド**: Astro + Tailwind CSS v4
 - **バックエンド**: Astro API Routes (Node.js)
-- **AI**: Claude API (claude-sonnet-4-20250514) + Vision
+- **AI**: Gemini API (gemini-3-pro-preview / gemini-3-flash-preview) + Vision
 - **スクレイピング**: Puppeteer + Cheerio
 
 ## プロジェクト構成
@@ -73,7 +73,7 @@ src/
 1. URL入力
 2. Puppeteerでページレンダリング＆スクリーンショット撮影
 3. Cheerioでページ構造を解析（hero/proof/pricing等）
-4. スクリーンショット + コンテンツをClaudeに送信
+4. スクリーンショット + コンテンツをGeminiに送信
 5. GEO 5指標で評価・スコアリング
 6. 問題点抽出・改善案生成
 7. 結果表示
