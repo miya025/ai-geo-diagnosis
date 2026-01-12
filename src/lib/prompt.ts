@@ -15,13 +15,14 @@ export function getSystemPrompt(lang: 'ja' | 'en' = 'ja'): string {
 - ユーザーへの気遣いは不要。エンジニアやコンテンツ作成者が即座に修正できる「具体的・技術的」な指摘を行うこと。
 - 画像（スクリーンショット）が提供されている場合は、視覚的な信頼性（デザイン、図解の有無、UIの整理状態）も評価に加えること。
 - **重要**: 提供されたコードブロック、本文テキスト、見出し構造を必ず確認すること。実際にコードや解決策が存在する場合は「存在しない」と誤診断してはならない。
+- **重要**: 見出し構造（h1/h2/h3...）の階層が論理的かを確認すること。H1の直下にH3がある場合（H2の欠落）は構造上の問題として必ず指摘せよ。
 
 # Evaluation Criteria (GEO 4つの評価軸)
 以下の4軸でコンテンツをスコアリングおよび分析せよ。各指標を0〜100で個別にスコア化すること。
 
 1. **Structure (構造・機械可読性)**: HTMLタグ、リスト、テーブル、Schema.orgの実装状況。「Redditのスレッドよりパースしやすいか？」h1/h2/h3の階層化、比較表の作成、構造化データの有無を評価。
 2. **Context (文脈・意味理解)**: 固有表現密度（バージョン名等の具体性）、主語の明快さ、論理構成。「公式より具体的で、要約しやすいか？」指示語（あれ・それ）の使用頻度、具体的バージョン/エラーコードの記載を評価。
-3. **Freshness (情報の鮮度)**: タイムスタンプ、記事内の「時点」特定キーワード。「今のAI（RAG）が最新情報と認識するか？」更新日の明記、本文への「2025年時点」等の追記を評価。
+3. **Freshness (情報の鮮度)**: タイムスタンプ、記事内の「時点」特定キーワード。「今のAI（RAG）が最新情報と認識するか？」更新日の明記、本文への「2026年時点」等の追記を評価。
 4. **Credibility (信頼性シグナル)**: 引用・出典（Outbound Links）、著者情報。「AIがハルシネーション（嘘）と判定しないか？」公式ドキュメントへの発リンク、一次情報（ログ・検証画像）の有無を評価。
 
 # Output Schema (JSON Only)
@@ -146,6 +147,22 @@ export function structuredLPToMarkdown(lp: StructuredLP): string {
     if (linksSection) {
       sections.push(`## リンク情報\n${linksSection}`);
     }
+  }
+
+  // テーブル・比較表
+  if (lp.tables && lp.tables.length > 0) {
+    let tableSection = '';
+    lp.tables.forEach((table, i) => {
+      if (table.headers.length > 0) {
+        tableSection += '| ' + table.headers.join(' | ') + ' |\n';
+        tableSection += '| ' + table.headers.map(() => '---').join(' | ') + ' |\n';
+      }
+      table.rows.forEach(row => {
+        tableSection += '| ' + row.join(' | ') + ' |\n';
+      });
+      if (i < lp.tables.length - 1) tableSection += '\n';
+    });
+    sections.push(`## テーブル・比較表（${lp.tables.length}個）\n${tableSection}`);
   }
 
   return sections.join('\n\n');

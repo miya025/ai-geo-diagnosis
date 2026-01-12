@@ -176,6 +176,7 @@ export interface StructuredLP {
   codeBlocks: string[]; // コードスニペット
   headings: { level: number; text: string }[]; // 見出し構造
   links: { type: 'internal' | 'external'; url: string; text: string }[]; // リンク情報
+  tables: { headers: string[]; rows: string[][] }[]; // テーブル・比較表
 }
 
 export async function scrapeUrl(url: string): Promise<StructuredLP> {
@@ -355,6 +356,35 @@ export async function scrapeUrl(url: string): Promise<StructuredLP> {
       }
     });
 
+    // === テーブル抽出 ===
+    const tables: { headers: string[]; rows: string[][] }[] = [];
+    $('table').each((_, tableEl) => {
+      const headers: string[] = [];
+      const rows: string[][] = [];
+
+      // ヘッダー抽出（thead内のth/td、または最初のtr内のth）
+      $(tableEl).find('thead th, thead td, tr:first-child th').each((_, th) => {
+        headers.push($(th).text().trim());
+      });
+
+      // 行データ抽出
+      $(tableEl).find('tbody tr, tr').each((rowIdx, tr) => {
+        // ヘッダー行はスキップ
+        if (rowIdx === 0 && headers.length > 0) return;
+        const cells: string[] = [];
+        $(tr).find('td, th').each((_, cell) => {
+          cells.push($(cell).text().trim());
+        });
+        if (cells.length > 0 && cells.some(c => c)) {
+          rows.push(cells);
+        }
+      });
+
+      if (headers.length > 0 || rows.length > 0) {
+        tables.push({ headers, rows });
+      }
+    });
+
     // === リンク抽出 ===
     const parsedUrl = new URL(url);
     const links: { type: 'internal' | 'external'; url: string; text: string }[] = [];
@@ -410,6 +440,7 @@ export async function scrapeUrl(url: string): Promise<StructuredLP> {
       codeBlocks: [...new Set(codeBlocks)].slice(0, 10),
       headings: headings.slice(0, 30),
       links: links.slice(0, 20),
+      tables: tables.slice(0, 10),
     };
   } finally {
     await browser.close();
