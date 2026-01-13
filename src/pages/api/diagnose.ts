@@ -22,36 +22,40 @@ import {
 
 export const prerender = false;
 
-// Vision対応のための型定義（Gemini用）
-interface GeminiPart {
+// Vision対応のための型定義（Anthropic用）
+interface AnthropicContentPart {
+  type: 'text' | 'image';
   text?: string;
-  inline_data?: {
-    mime_type: string;
+  source?: {
+    type: 'base64';
+    media_type: string;
     data: string;
   };
 }
 
-// AIモデル定義（Free = Flash / Pro = Pro）
+// AIモデル定義（Free = Haiku / Pro = Sonnet）
 const AI_MODELS = {
-  free: 'gemini-3-flash-preview',    // Gemini 3 Flash
-  pro: 'gemini-3-pro-preview',       // Gemini 3 Pro
+  free: 'claude-haiku-4-5-20251001',      // Claude 4.5 Haiku
+  pro: 'claude-sonnet-4-5-20250929',      // Claude 4.5 Sonnet
 } as const;
 
-async function callGeminiWithVision(
+async function callClaudeWithVision(
   apiKey: string,
   prompt: string,
   system: string,
   base64Image?: string,
   isPremium: boolean = false
 ): Promise<string> {
-  const parts: GeminiPart[] = [
-    { text: prompt }
+  const content: AnthropicContentPart[] = [
+    { type: 'text', text: prompt }
   ];
 
   if (base64Image) {
-    parts.push({
-      inline_data: {
-        mime_type: 'image/jpeg',
+    content.unshift({
+      type: 'image',
+      source: {
+        type: 'base64',
+        media_type: 'image/jpeg',
         data: base64Image,
       },
     });
@@ -61,37 +65,39 @@ async function callGeminiWithVision(
   const model = isPremium ? AI_MODELS.pro : AI_MODELS.free;
   console.log(`Using AI model: ${model} (isPremium: ${isPremium})`);
 
-  const response = await fetch(
-    `https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${apiKey}`,
-    {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        contents: [{ parts }],
-        systemInstruction: { parts: [{ text: system }] },
-        generationConfig: {
-          maxOutputTokens: 8000,
-          temperature: 0.7,
+  const response = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+    },
+    body: JSON.stringify({
+      model,
+      max_tokens: 8000,
+      system,
+      messages: [
+        {
+          role: 'user',
+          content,
         },
-      }),
-    }
-  );
+      ],
+    }),
+  });
 
   if (!response.ok) {
     const errorText = await response.text();
-    console.error('Gemini API error:', errorText);
+    console.error('Anthropic API error:', errorText);
     try {
       const errorJson = JSON.parse(errorText);
-      throw new Error(errorJson.error?.message || 'Gemini API呼び出しに失敗しました');
+      throw new Error(errorJson.error?.message || 'Claude API呼び出しに失敗しました');
     } catch {
-      throw new Error('Gemini API呼び出しに失敗しました / Gemini API call failed');
+      throw new Error('Claude API呼び出しに失敗しました / Claude API call failed');
     }
   }
 
   const data = await response.json();
-  const textContent = data.candidates?.[0]?.content?.parts?.[0]?.text;
+  const textContent = data.content?.find((c: any) => c.type === 'text')?.text;
   return textContent || '';
 }
 
@@ -121,7 +127,7 @@ export const POST: APIRoute = async ({ request }) => {
     }
 
     // APIキー確認
-    const apiKey = import.meta.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = import.meta.env.ANTHROPIC_API_KEY || process.env.ANTHROPIC_API_KEY;
     if (!apiKey) {
       return new Response(JSON.stringify({ error: language === 'en' ? 'API configuration error' : 'API設定エラー' }), {
         status: 500,
@@ -246,9 +252,9 @@ export const POST: APIRoute = async ({ request }) => {
     const systemPrompt = getSystemPrompt(language as 'ja' | 'en');
 
     // Vision API呼び出し (スクリーンショットがある場合のみ送信)
-    // Free: Flash / Pro: Pro で切替
+    // Free: Haiku / Pro: Sonnet で切替
     const currentModel = isPremium ? AI_MODELS.pro : AI_MODELS.free;
-    const geoResult = await callGeminiWithVision(apiKey, geoPrompt, systemPrompt, lp.screenshot, isPremium);
+    const geoResult = await callClaudeWithVision(apiKey, geoPrompt, systemPrompt, lp.screenshot, isPremium);
     console.log('--- AI RAW RESPONSE ---\n', geoResult.slice(0, 500) + '...', '\n-----------------------');
 
     // 結果パース
