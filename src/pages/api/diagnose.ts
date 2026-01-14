@@ -74,7 +74,7 @@ async function callClaudeWithVision(
     },
     body: JSON.stringify({
       model,
-      max_tokens: 8000,
+      max_tokens: 10000,
       system,
       messages: [
         {
