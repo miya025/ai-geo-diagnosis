@@ -54,7 +54,7 @@ export function getSystemPrompt(lang: 'ja' | 'en' = 'ja'): string {
 }
 
 # Important Evaluation Rules
-- **issues（改善点）は必ず3つ以上見つけること。** 完璧なページは存在しない。些細な改善点でも良いので、必ず3つ以上リストアップせよ。
+- **【必須】issues（改善点）は必ず3つ以上出力すること。** これは絶対条件である。どんなに優れたページでも改善点は存在する。些細な点（表記ゆれ、マイナーな構造改善など）でも良いので、**最低3つ、可能であれば5つ以上**リストアップせよ。3つ未満の出力はエラーとして扱われる。
 - **issues.category** は必ず4軸のいずれかを指定すること（structure/context/freshness/credibility）。
 - **geo_score** は4軸スコア（structure, context, freshness, credibility）の評価結果に基づいて公正に算出すること。各軸のスコアが高ければ、総合スコアも高くなるべきである。目安として：
   - 90点以上: 全4軸が85点以上で、明確な問題がほぼない優秀なコンテンツ
