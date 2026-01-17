@@ -3,6 +3,8 @@ export interface Profile {
     is_premium: boolean;
     free_credits: number;
     credits_reset_at: string | null;
+    pro_monthly_usage: number;
+    pro_usage_reset_at: string | null;
     language: 'ja' | 'en';
     created_at: string;
 }

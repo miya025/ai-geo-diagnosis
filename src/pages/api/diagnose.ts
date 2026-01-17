@@ -17,6 +17,7 @@ import {
 import {
   checkAndResetCredits,
   consumeCredit,
+  consumeProUsage,
   saveCachedResult,
 } from '../../lib/supabase-admin';
 
@@ -140,6 +141,7 @@ export const POST: APIRoute = async ({ request }) => {
     // ========================================
     let isPremium = false;
     let freeCredits = 3;
+    let proMonthlyUsage = 0;
     let userId: string | null = null;
     let authClient: any = null; // 後でconsumeCreditでも使うため
 
@@ -172,6 +174,7 @@ export const POST: APIRoute = async ({ request }) => {
         if (profile) {
           isPremium = profile.is_premium;
           freeCredits = profile.free_credits;
+          proMonthlyUsage = profile.pro_monthly_usage || 0;
 
           // 無料ユーザーのクレジット確認
           if (!isPremium) {
@@ -185,6 +188,23 @@ export const POST: APIRoute = async ({ request }) => {
                 free_credits: 0
               }), {
                 status: 403,
+                headers: { 'Content-Type': 'application/json' },
+              });
+            }
+          }
+
+          // Proユーザーの月間上限確認（100回/月）
+          if (isPremium) {
+            if (proMonthlyUsage >= 100) {
+              const msg = language === 'en'
+                ? 'You have reached the monthly limit (100 diagnoses). Please contact support@geocheck.ai for assistance.'
+                : '今月のPro診断上限（100回）に達しました。support@geocheck.ai までお問い合わせください。';
+              return new Response(JSON.stringify({
+                error: msg,
+                pro_limit_reached: true,
+                pro_monthly_usage: proMonthlyUsage
+              }), {
+                status: 429,
                 headers: { 'Content-Type': 'application/json' },
               });
             }
@@ -322,13 +342,24 @@ export const POST: APIRoute = async ({ request }) => {
       console.error('Cache save error (non-fatal):', cacheError);
     }
 
-    // Step 5: クレジット消費（無料ユーザーのみ、キャッシュヒット時は消費しない）
+    // Step 5: クレジット/使用量消費（キャッシュヒット時は消費しない）
     let newFreeCredits = freeCredits;
-    if (userId && !isPremium) {
-      const consumed = await consumeCredit(userId);
-      if (consumed) {
-        newFreeCredits = freeCredits - 1;
-        console.log(`Credit consumed. Remaining: ${newFreeCredits}`);
+    let newProUsage = proMonthlyUsage;
+    if (userId) {
+      if (isPremium) {
+        // Proユーザーは使用量をインクリメント
+        const result = await consumeProUsage(userId);
+        if (result.success) {
+          newProUsage = result.usage;
+          console.log(`Pro usage consumed. Current: ${newProUsage}/${result.limit}`);
+        }
+      } else {
+        // 無料ユーザーはクレジットを消費
+        const consumed = await consumeCredit(userId);
+        if (consumed) {
+          newFreeCredits = freeCredits - 1;
+          console.log(`Credit consumed. Remaining: ${newFreeCredits}`);
+        }
       }
     }
 
@@ -358,6 +389,7 @@ export const POST: APIRoute = async ({ request }) => {
       ...result,
       is_premium: isPremium,
       free_credits: newFreeCredits,
+      pro_monthly_usage: newProUsage,
     }), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },

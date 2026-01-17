@@ -24,6 +24,7 @@ export function getSupabaseAdmin() {
 /**
  * 30日ローリング制限チェック + クレジットリセット
  * - credits_reset_at から30日経過していたらクレジットを3に戻す
+ * - Pro ユーザーは pro_monthly_usage もリセット
  * - Admin権限で実行する（ユーザーによる改ざん防止）
  */
 export async function checkAndResetCredits(userId: string): Promise<Profile | null> {
@@ -42,21 +43,39 @@ export async function checkAndResetCredits(userId: string): Promise<Profile | nu
     }
 
     const now = new Date();
-    const resetAt = profile.credits_reset_at ? new Date(profile.credits_reset_at) : null;
+    const THIRTY_DAYS_MS = 30 * 24 * 60 * 60 * 1000;
 
-    // リセット日が未設定 or 30日経過している場合
-    if (!resetAt || now.getTime() - resetAt.getTime() > 30 * 24 * 60 * 60 * 1000) {
-        const newResetAt = now.toISOString();
+    // 無料ユーザーのクレジットリセット
+    const creditsResetAt = profile.credits_reset_at ? new Date(profile.credits_reset_at) : null;
+    const needsFreeReset = !creditsResetAt || now.getTime() - creditsResetAt.getTime() > THIRTY_DAYS_MS;
+
+    // Proユーザーの使用量リセット
+    const proUsageResetAt = profile.pro_usage_reset_at ? new Date(profile.pro_usage_reset_at) : null;
+    const needsProReset = profile.is_premium && (!proUsageResetAt || now.getTime() - proUsageResetAt.getTime() > THIRTY_DAYS_MS);
+
+    // 更新が必要な場合のみDB更新
+    if (needsFreeReset || needsProReset) {
+        const updates: any = {};
+
+        if (needsFreeReset) {
+            updates.free_credits = 3;
+            updates.credits_reset_at = now.toISOString();
+        }
+
+        if (needsProReset) {
+            updates.pro_monthly_usage = 0;
+            updates.pro_usage_reset_at = now.toISOString();
+        }
+
         const { data, error } = await admin
             .from('profiles')
-            .update({ free_credits: 3, credits_reset_at: newResetAt })
+            .update(updates)
             .eq('id', userId)
             .select()
             .single();
 
         if (error) {
-            console.error('Error resetting credits:', error);
-            // エラー時は古いプロフィールを返すがログに残す
+            console.error('Error resetting credits/usage:', error);
             return profile;
         }
         return data as Profile;
@@ -97,6 +116,51 @@ export async function consumeCredit(userId: string): Promise<boolean> {
     }
 
     return true;
+}
+
+/**
+ * Pro月間使用量制限（100回/月）
+ */
+const PRO_MONTHLY_LIMIT = 100;
+
+/**
+ * Proユーザーの月間使用量を消費（1増やす）
+ * - Admin権限で実行する
+ * @returns {Object} { success: boolean, usage: number, limit: number }
+ */
+export async function consumeProUsage(userId: string): Promise<{ success: boolean; usage: number; limit: number }> {
+    const admin = getSupabaseAdmin();
+
+    // まずリセットチェック
+    const profile = await checkAndResetCredits(userId);
+    if (!profile) {
+        return { success: false, usage: 0, limit: PRO_MONTHLY_LIMIT };
+    }
+
+    if (!profile.is_premium) {
+        // 無料ユーザーは使用量カウント不要（consumeCreditで処理）
+        return { success: true, usage: 0, limit: PRO_MONTHLY_LIMIT };
+    }
+
+    const currentUsage = profile.pro_monthly_usage || 0;
+
+    // 上限チェック
+    if (currentUsage >= PRO_MONTHLY_LIMIT) {
+        return { success: false, usage: currentUsage, limit: PRO_MONTHLY_LIMIT };
+    }
+
+    // Admin権限で加算
+    const { error } = await admin
+        .from('profiles')
+        .update({ pro_monthly_usage: currentUsage + 1 })
+        .eq('id', userId);
+
+    if (error) {
+        console.error('Error consuming pro usage:', error);
+        return { success: false, usage: currentUsage, limit: PRO_MONTHLY_LIMIT };
+    }
+
+    return { success: true, usage: currentUsage + 1, limit: PRO_MONTHLY_LIMIT };
 }
 
 /**
