@@ -27,7 +27,8 @@ export function getSystemPrompt(lang: 'ja' | 'en' = 'ja'): string {
 4. **Credibility (信頼性シグナル)**: 引用・出典（Outbound Links）、著者情報。「AIがハルシネーション（嘘）と判定しないか？」公式ドキュメントへの発リンク、一次情報（ログ・検証画像）の有無を評価。
 
 # Output Schema (JSON Only)
-以下のJSON形式のみを出力せよ。マークダウンのコードブロックは不要。
+以下のJSON形式のみを出力せよ。
+**重要**: マークダウンのコードブロック（\`\`\`json や \`\`\`）で囲んではならない。純粋なJSONのみを出力すること。
 
 {
   "summary": "AI検索エンジンから見たこのページの評価（150文字以内）。引用に値するか、単なるノイズとして処理されるかを断言する。",
@@ -261,53 +262,102 @@ export function parseJSON<T>(text: string): T {
   // JSONを抽出（マークダウンのコードブロック対応）
   let jsonStr = text;
 
+  // コードブロックのパターン（終了タグがなくても対応）
+  // パターン1: 完全な ```json ... ```
+  // パターン2: 開始タグのみ ```json ... （レスポンス途切れ）
   const codeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*?)```/);
   if (codeBlockMatch) {
     jsonStr = codeBlockMatch[1];
+  } else {
+    // 終了タグがない場合（途中で切れた場合）
+    const openCodeBlockMatch = text.match(/```(?:json)?\s*([\s\S]*)/);
+    if (openCodeBlockMatch) {
+      jsonStr = openCodeBlockMatch[1];
+    }
   }
 
-  // 最初の { から最後の } までを抽出
-  const jsonMatch = jsonStr.match(/\{[\s\S]*\}/);
+  // 最初の { から最後の } までを抽出（または途中までのJSONを取得）
+  const jsonMatch = jsonStr.match(/\{[\s\S]*/);
   if (!jsonMatch) {
-    throw new Error('JSONのパースに失敗しました');
+    throw new Error('JSONのパースに失敗しました: JSON構造が見つかりません');
   }
 
   let cleanJson = jsonMatch[0];
+
+  // 完全なJSON（}で終わる）の場合は最後の}までで切る
+  const lastBraceIndex = cleanJson.lastIndexOf('}');
+  if (lastBraceIndex > 0) {
+    cleanJson = cleanJson.substring(0, lastBraceIndex + 1);
+  }
 
   // JSONの修復処理
   try {
     return JSON.parse(cleanJson) as T;
   } catch (firstError) {
     // 一般的なJSON破損を修復
+    console.log('First JSON parse failed, attempting repair...');
+
     try {
       // 数値的修復: 制御文字のエスケープ処理（文字列内の改行などを修正）
       cleanJson = escapeControlCharsInJsonString(cleanJson);
 
+      // 途切れた値の修復（数値が途切れている場合）
+      // 例: "freshness": 7... → "freshness": 7
+      cleanJson = cleanJson.replace(/:\s*(\d+)\.\.\./g, ': $1');
+
+      // 途切れたキーの修復（キー名が途中で切れている場合）
+      // 例: "fresh → 削除
+      cleanJson = cleanJson.replace(/,\s*"[^"]*$/g, '');
+
       // 行末のカンマ問題を修復 (配列やオブジェクトの最後のカンマ)
       cleanJson = cleanJson.replace(/,(\s*[\]}])/g, '$1');
 
-      // 途切れたJSONの修復（簡易版）
-      // 1. 開いている文字列を閉じる
-      if ((cleanJson.match(/"/g) || []).length % 2 !== 0) {
-        cleanJson += '"';
+      // 途切れたJSONの修復（強化版）
+      // 1. 閉じられていない文字列値を閉じる
+      const quoteCount = (cleanJson.match(/"/g) || []).length;
+      if (quoteCount % 2 !== 0) {
+        // 最後の開いている引用符を見つけて閉じる
+        // 途切れた文字列の末尾を探す
+        cleanJson = cleanJson.replace(/"[^"]*$/, '""');
       }
 
-      // 2. 開いている括弧を閉じる
-      const stack = [];
-      for (const char of cleanJson) {
-        if (char === '{') stack.push('}');
-        else if (char === '[') stack.push(']');
-        else if (char === '}' || char === ']') {
-          const expected = stack[stack.length - 1];
-          if (char === expected) stack.pop();
+      // 2. 途切れたプロパティ値（コロンの後に値がない）を修復
+      cleanJson = cleanJson.replace(/:\s*$/gm, ': 0');
+      cleanJson = cleanJson.replace(/:\s*,/g, ': 0,');
+
+      // 3. 再度末尾カンマを削除
+      cleanJson = cleanJson.replace(/,\s*$/gm, '');
+
+      // 4. 開いている括弧を閉じる
+      const stack: string[] = [];
+      let inString = false;
+      for (let i = 0; i < cleanJson.length; i++) {
+        const char = cleanJson[i];
+        const prevChar = i > 0 ? cleanJson[i - 1] : '';
+
+        // 文字列内外の判定
+        if (char === '"' && prevChar !== '\\') {
+          inString = !inString;
+        }
+
+        if (!inString) {
+          if (char === '{') stack.push('}');
+          else if (char === '[') stack.push(']');
+          else if (char === '}' || char === ']') {
+            const expected = stack[stack.length - 1];
+            if (char === expected) stack.pop();
+          }
         }
       }
+
       // スタックに残っている閉じ括弧を逆順に追加
       while (stack.length > 0) {
         cleanJson += stack.pop();
       }
 
-      return JSON.parse(cleanJson) as T;
+      const result = JSON.parse(cleanJson) as T;
+      console.log('JSON repair successful');
+      return result;
     } catch (secondError) {
       console.error('JSON parse error. Raw text:', text.slice(0, 500));
       console.error('Cleaned JSON:', cleanJson.slice(0, 500));
