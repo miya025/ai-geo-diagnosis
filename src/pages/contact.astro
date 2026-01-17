@@ -1,0 +1,129 @@
+---
+import Layout from "../layouts/Layout.astro";
+
+const title = "Contact - AI GEO Diagnosis";
+const description =
+    "Contact AI GEO Diagnosis - Get in touch with our support team";
+---
+
+<Layout title={title} description={description} lang="en">
+    <div class="min-h-screen bg-slate-50 font-sans pb-20">
+        <!-- ヘッダー -->
+        <header
+            class="sticky top-0 z-50 w-full bg-white/80 backdrop-blur-md border-b border-indigo-50 shadow-sm"
+        >
+            <div
+                class="container mx-auto px-6 h-20 flex items-center justify-between"
+            >
+                <a href="/" class="flex items-center gap-2 group">
+                    <div
+                        class="w-10 h-10 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-xl flex items-center justify-center text-white font-bold text-xl shadow-lg shadow-indigo-200 group-hover:scale-110 transition-transform duration-300"
+                    >
+                        G
+                    </div>
+                    <span
+                        class="font-bold text-xl text-slate-800 tracking-tight group-hover:text-indigo-600 transition-colors whitespace-nowrap"
+                        >AI GEO Diagnosis</span
+                    >
+                </a>
+            </div>
+        </header>
+
+        <main class="container mx-auto px-6 lg:px-12 max-w-4xl py-16">
+            <article
+                class="bg-white rounded-3xl shadow-xl p-8 lg:p-12 border border-slate-100"
+            >
+                <h1 class="text-3xl lg:text-4xl font-bold text-slate-900 mb-8">
+                    Contact Us
+                </h1>
+
+                <div class="prose prose-slate max-w-none">
+                    <p class="text-slate-600 leading-relaxed mb-8">
+                        We'd love to hear from you! If you have any questions,
+                        feedback, or need support, please reach out to us using
+                        the information below.
+                    </p>
+
+                    <section class="mb-8">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">
+                            📧 Email Support
+                        </h2>
+                        <div
+                            class="bg-indigo-50 border border-indigo-100 rounded-xl p-6"
+                        >
+                            <p class="text-slate-600 mb-2">
+                                For general inquiries and support:
+                            </p>
+                            <p
+                                class="text-2xl font-semibold text-indigo-600 select-all"
+                            >
+                                naya783588@gmail.com
+                            </p>
+                            <p class="text-sm text-slate-500 mt-3">
+                                We typically respond within 24-48 hours.
+                            </p>
+                        </div>
+                    </section>
+
+                    <section class="mb-8">
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">
+                            💡 Before Contacting Us
+                        </h2>
+                        <ul class="list-disc pl-6 text-slate-600 space-y-2">
+                            <li>
+                                Check our <a
+                                    href="/terms"
+                                    class="text-indigo-600 hover:underline"
+                                    >Terms of Service</a
+                                > for common questions about subscriptions and usage.
+                            </li>
+                            <li>
+                                Review our <a
+                                    href="/privacy"
+                                    class="text-indigo-600 hover:underline"
+                                    >Privacy Policy</a
+                                > for data-related inquiries.
+                            </li>
+                        </ul>
+                    </section>
+
+                    <section>
+                        <h2 class="text-xl font-bold text-slate-800 mb-4">
+                            🕐 Support Hours
+                        </h2>
+                        <p class="text-slate-600 leading-relaxed">
+                            Our support team is available Monday through Friday,
+                            9:00 AM - 6:00 PM (JST). We aim to respond to all
+                            inquiries as quickly as possible.
+                        </p>
+                    </section>
+                </div>
+            </article>
+        </main>
+
+        <footer
+            class="bg-white border-t border-slate-100 py-12 text-center text-slate-500 text-sm"
+        >
+            <div class="container mx-auto px-6">
+                <div class="flex flex-wrap justify-center gap-6 mb-4">
+                    <a
+                        href="/privacy"
+                        class="hover:text-indigo-600 transition-colors"
+                        >Privacy Policy</a
+                    >
+                    <a
+                        href="/terms"
+                        class="hover:text-indigo-600 transition-colors"
+                        >Terms of Service</a
+                    >
+                    <a
+                        href="/contact"
+                        class="hover:text-indigo-600 transition-colors"
+                        >Contact</a
+                    >
+                </div>
+                <p>&copy; {new Date().getFullYear()} AI GEO Diagnosis</p>
+            </div>
+        </footer>
+    </div>
+</Layout>
