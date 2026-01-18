@@ -827,6 +827,117 @@ const { title, description } = seoContent[initialLang];
     </div>
   </div>
 
+  <!-- サブスクキャンセル確認モーダル -->
+  <div
+    id="cancel-confirm-modal"
+    class="fixed inset-0 bg-black/50 hidden items-center justify-center z-50"
+  >
+    <div class="bg-white rounded-2xl shadow-2xl p-8 max-w-md w-full mx-4">
+      <div class="flex items-center gap-3 mb-4">
+        <div
+          class="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            class="h-6 w-6 text-amber-600"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+            ></path>
+          </svg>
+        </div>
+        <h2
+          class="text-xl font-bold text-slate-900"
+          data-i18n="cancel_confirm_title"
+        >
+          本当にキャンセルしますか？
+        </h2>
+      </div>
+
+      <p class="text-slate-600 mb-4" data-i18n="cancel_confirm_desc">
+        キャンセルすると以下の機能が失われます：
+      </p>
+
+      <div class="bg-red-50 border border-red-100 rounded-xl p-4 mb-6">
+        <ul class="space-y-2 text-red-700">
+          <li class="flex items-center gap-2">
+            <svg
+              class="w-5 h-5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span data-i18n="cancel_lose_1">回数無制限の診断</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg
+              class="w-5 h-5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span data-i18n="cancel_lose_2">全ての診断結果を表示</span>
+          </li>
+          <li class="flex items-center gap-2">
+            <svg
+              class="w-5 h-5 flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+                d="M6 18L18 6M6 6l12 12"></path>
+            </svg>
+            <span data-i18n="cancel_lose_3">診断精度向上</span>
+          </li>
+        </ul>
+      </div>
+
+      <p class="text-sm text-slate-500 mb-6" data-i18n="cancel_note">
+        ※
+        キャンセルしても、現在の請求期間終了まではPro機能をご利用いただけます。
+      </p>
+
+      <div class="flex gap-3">
+        <button
+          id="cancel-confirm-back-btn"
+          class="flex-1 bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium py-3 px-6 rounded-xl transition"
+          data-i18n="btn_back"
+        >
+          戻る
+        </button>
+        <button
+          id="cancel-confirm-proceed-btn"
+          class="flex-1 bg-red-500 hover:bg-red-600 text-white font-medium py-3 px-6 rounded-xl transition"
+          data-i18n="btn_proceed_cancel"
+        >
+          キャンセルへ進む
+        </button>
+      </div>
+    </div>
+  </div>
+
   <script is:inline define:vars={{ initialLang }}>
     window.__INITIAL_LANG__ = initialLang;
   </script>
@@ -977,6 +1088,15 @@ const { title, description } = seoContent[initialLang];
         benefit_advice_desc: "解決策を含む詳細な改善指示を完全表示",
         cancel_anytime: "いつでもキャンセル可能",
         manage_subscription: "サブスク管理",
+        cancel_confirm_title: "本当にキャンセルしますか？",
+        cancel_confirm_desc: "キャンセルすると以下の機能が失われます：",
+        cancel_lose_1: "回数無制限の診断",
+        cancel_lose_2: "全ての診断結果を表示",
+        cancel_lose_3: "診断精度向上",
+        cancel_note:
+          "※ キャンセルしても、現在の請求期間終了まではPro機能をご利用いただけます。",
+        btn_back: "戻る",
+        btn_proceed_cancel: "キャンセルへ進む",
       },
       en: {
         title: "AI GEO Diagnosis",
@@ -1060,6 +1180,15 @@ const { title, description } = seoContent[initialLang];
         benefit_advice_desc: "Full access to detailed improvement instructions",
         cancel_anytime: "Cancel anytime",
         manage_subscription: "Manage Plan",
+        cancel_confirm_title: "Cancel your subscription?",
+        cancel_confirm_desc: "You will lose access to the following features:",
+        cancel_lose_1: "Unlimited diagnoses",
+        cancel_lose_2: "View all diagnostic results",
+        cancel_lose_3: "Improved accuracy",
+        cancel_note:
+          "* You can continue using Pro features until the end of your current billing period.",
+        btn_back: "Go Back",
+        btn_proceed_cancel: "Proceed to Cancel",
       },
     };
 
@@ -1289,10 +1418,23 @@ const { title, description } = seoContent[initialLang];
     headerLoginBtn?.addEventListener("click", showLoginModal);
     headerLogoutBtn?.addEventListener("click", logout);
 
-    // サブスク管理ボタン
+    // キャンセル確認モーダル
+    const cancelConfirmModal = document.getElementById("cancel-confirm-modal");
+
+    function showCancelConfirmModal() {
+      cancelConfirmModal?.classList.remove("hidden");
+      cancelConfirmModal?.classList.add("flex");
+    }
+
+    function hideCancelConfirmModal() {
+      cancelConfirmModal?.classList.add("hidden");
+      cancelConfirmModal?.classList.remove("flex");
+    }
+
+    // サブスク管理ボタン → 確認ダイアログを表示
     document
       .getElementById("manage-subscription-btn")
-      ?.addEventListener("click", async () => {
+      ?.addEventListener("click", () => {
         if (!supabase || !currentUser) {
           alert(
             currentLang === "en"
@@ -1301,19 +1443,40 @@ const { title, description } = seoContent[initialLang];
           );
           return;
         }
+        showCancelConfirmModal();
+      });
 
-        const manageBtn = document.getElementById(
-          "manage-subscription-btn",
+    // 確認ダイアログ: 戻るボタン
+    document
+      .getElementById("cancel-confirm-back-btn")
+      ?.addEventListener("click", hideCancelConfirmModal);
+
+    // 確認ダイアログ: 背景クリックで閉じる
+    cancelConfirmModal?.addEventListener("click", (e) => {
+      if (e.target === cancelConfirmModal) hideCancelConfirmModal();
+    });
+
+    // 確認ダイアログ: キャンセルへ進むボタン
+    document
+      .getElementById("cancel-confirm-proceed-btn")
+      ?.addEventListener("click", async () => {
+        const proceedBtn = document.getElementById(
+          "cancel-confirm-proceed-btn",
         ) as HTMLButtonElement | null;
-        if (manageBtn) {
-          manageBtn.disabled = true;
-          manageBtn.classList.add("animate-spin");
+        const originalText = proceedBtn?.innerHTML;
+
+        if (proceedBtn) {
+          proceedBtn.disabled = true;
+          proceedBtn.innerHTML =
+            currentLang === "en"
+              ? '<span class="inline-block animate-spin mr-2">↻</span>Processing...'
+              : '<span class="inline-block animate-spin mr-2">↻</span>処理中...';
         }
 
         try {
           const {
             data: { session },
-          } = await supabase.auth.getSession();
+          } = await supabase!.auth.getSession();
           if (!session?.access_token) {
             throw new Error("No session");
           }
@@ -1344,9 +1507,9 @@ const { title, description } = seoContent[initialLang];
               : "サブスク管理を開けませんでした: " + (e?.message || String(e)),
           );
         } finally {
-          if (manageBtn) {
-            manageBtn.disabled = false;
-            manageBtn.classList.remove("animate-spin");
+          if (proceedBtn && originalText) {
+            proceedBtn.disabled = false;
+            proceedBtn.innerHTML = originalText;
           }
         }
       });
